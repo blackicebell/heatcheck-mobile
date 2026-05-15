@@ -19,7 +19,7 @@ export function ShareMilestoneCard({
   return (
     <View style={[styles.card, { borderColor: accent }]}>
       <AppText variant="tiny" muted>
-        HeatCheck
+        HeatRadar
       </AppText>
       <AppText variant="h2">{title}</AppText>
       <AppText variant="title" style={{ color: accent }}>

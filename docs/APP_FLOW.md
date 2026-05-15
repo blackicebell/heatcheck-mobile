@@ -4,7 +4,7 @@
 
 Current flow:
 
-1. Splash introduces HeatCheck.
+1. Splash introduces HeatRadar.
 2. Onboarding explains audience movement, why the artist is getting heat, and progress/reward.
 3. Login preview enters the mock app without real authentication.
 

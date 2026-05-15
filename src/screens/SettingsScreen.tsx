@@ -49,7 +49,7 @@ export function SettingsScreen() {
       <NavigationHeader label="Signal settings" actionIcon="shield-checkmark" />
       <SectionHeader
         title="Settings."
-        body="Keep HeatCheck focused on the signals that tell you when listener movement is picking up."
+        body="Keep HeatRadar focused on the signals that tell you when listener movement is picking up."
       />
       <SectionHeader title="Platform connections" />
       <StaggeredList

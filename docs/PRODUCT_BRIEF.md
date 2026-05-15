@@ -2,9 +2,9 @@
 
 ## Overview
 
-HeatCheck is a mobile-first growth tracking app for independent music artists. It helps artists quickly understand whether their music is gaining traction, why their Heat Score changed, and what listener movement is worth paying attention to.
+HeatRadar is a mobile-first growth tracking app for independent music artists. It helps artists quickly understand whether their music is gaining traction, why their Heat Score changed, and what listener movement is worth paying attention to.
 
-HeatCheck is not meant to feel like enterprise analytics software. It should feel like the app an artist opens when they want to know: "Is something happening with my music?"
+HeatRadar is not meant to feel like enterprise analytics software. It should feel like the app an artist opens when they want to know: "Is something happening with my music?"
 
 ## Target Audience
 
@@ -27,7 +27,7 @@ User mindset:
 
 Music performance data is scattered across platforms and often feels cold, fragmented, or hard to interpret. Artists can see streams, saves, views, likes, and followers, but they often cannot tell what it means emotionally or strategically.
 
-HeatCheck solves the translation problem:
+HeatRadar solves the translation problem:
 
 - What changed?
 - Why did it matter?
@@ -37,9 +37,9 @@ HeatCheck solves the translation problem:
 
 ## Value Proposition
 
-HeatCheck gives artists a simple, rewarding read on audience traction, engagement movement, release performance, and Heat Score growth.
+HeatRadar gives artists a simple, rewarding read on audience traction, engagement movement, release performance, and Heat Score growth.
 
-Instead of forcing users to inspect raw analytics, HeatCheck surfaces:
+Instead of forcing users to inspect raw analytics, HeatRadar surfaces:
 
 - Heat Score movement
 - what contributed to the score
@@ -51,7 +51,7 @@ Instead of forcing users to inspect raw analytics, HeatCheck surfaces:
 
 ## Product Philosophy
 
-HeatCheck should be:
+HeatRadar should be:
 
 - simple before comprehensive
 - emotionally rewarding before analytical
@@ -97,12 +97,12 @@ Likely premium value:
 
 - full Heat Score breakdown
 - cross-platform traction reads
-- weekly HeatCheck recap
+- weekly HeatRadar recap
 - shareable milestone cards
 - advanced notification controls
 - deeper release and audience history
 
-Monetization should not block the initial emotional reward. Artists should understand why HeatCheck is useful before seeing hard paywall pressure.
+Monetization should not block the initial emotional reward. Artists should understand why HeatRadar is useful before seeing hard paywall pressure.
 
 ## MVP Scope
 
@@ -131,7 +131,7 @@ MVP should not include:
 
 ## Future Vision
 
-HeatCheck can become the artist's daily pulse for music movement:
+HeatRadar can become the artist's daily pulse for music movement:
 
 - real-time traction signals
 - meaningful notification moments

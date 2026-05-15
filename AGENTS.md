@@ -1,12 +1,12 @@
-# HeatCheck Agent Instructions
+# HeatRadar Agent Instructions
 
-HeatCheck is the official app name. Keep this terminology consistent across UI, documentation, code comments, and product copy.
+HeatRadar is the official app name. Keep this terminology consistent across UI, documentation, code comments, and product copy.
 
 Use **Heat Score** for the central score concept. Heat Score should feel transparent, motivating, and easy to understand. Explain it through audience growth, engagement movement, release activity, and cross-platform traction.
 
 ## Product Direction
 
-HeatCheck is a mobile-first growth tracking app for independent music artists.
+HeatRadar is a mobile-first growth tracking app for independent music artists.
 
 The product focus is:
 
@@ -27,7 +27,7 @@ The app should feel:
 
 The product feeling is: "the app artists open to see if they're getting heat."
 
-Avoid positioning HeatCheck as:
+Avoid positioning HeatRadar as:
 
 - enterprise analytics software
 - productivity/task management

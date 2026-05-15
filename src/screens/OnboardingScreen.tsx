@@ -58,7 +58,7 @@ export function OnboardingScreen({ navigation }: Props) {
         <Button
           onPress={continueFlow}
         >
-          {isLast ? "Continue" : "Next"}
+          {isLast ? "Create your account" : "Next"}
         </Button>
       </View>
     </ScreenContainer>

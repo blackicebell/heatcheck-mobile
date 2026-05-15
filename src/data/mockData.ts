@@ -9,7 +9,7 @@ export const artist = {
 export const onboardingSlides = [
   {
     title: "See what's actually moving your audience.",
-    body: "HeatCheck turns scattered music signals into a simple read on growth, traction, and engagement.",
+    body: "HeatRadar turns scattered music signals into a simple read on growth, traction, and engagement.",
     accent: "#44F08A",
   },
   {
@@ -126,7 +126,7 @@ export const retentionHighlights = [
 ];
 
 export const notificationCooldown = {
-  summary: "HeatCheck is holding back 6 low-signal alerts this week.",
+  summary: "HeatRadar is holding back 6 low-signal alerts this week.",
   detail:
     "Only meaningful movement becomes a notification, so the app feels exciting without getting noisy.",
 };
@@ -222,7 +222,7 @@ export const settings = [
 ];
 
 export const accountSettings = [
-  { label: "Plan", value: "HeatCheck Pro preview" },
+  { label: "Plan", value: "HeatRadar Pro preview" },
   { label: "Artist profile", value: "Mira Vale" },
   { label: "Data mode", value: "Mock only" },
 ];
@@ -233,35 +233,35 @@ export const platformConnections = [
     name: "Spotify",
     status: "Connected",
     detail: "Streams, saves, listeners",
-    permission: "HeatCheck reads streams, saves, and listener movement. It never posts for you.",
+    permission: "HeatRadar reads streams, saves, and listener movement. It never posts for you.",
   },
   {
     id: "youtube",
     name: "YouTube",
     status: "Not connected",
     detail: "Views, subscribers, retention",
-    permission: "HeatCheck reads video performance and retention signals. Your channel stays in your control.",
+    permission: "HeatRadar reads video performance and retention signals. Your channel stays in your control.",
   },
   {
     id: "instagram",
     name: "Instagram",
     status: "Failed",
     detail: "Reels, profile visits, engagement",
-    permission: "HeatCheck reads public content signals and engagement movement. It does not send messages or post.",
+    permission: "HeatRadar reads public content signals and engagement movement. It does not send messages or post.",
   },
   {
     id: "soundcloud",
     name: "SoundCloud",
     status: "Reconnect",
     detail: "Plays, likes, reposts",
-    permission: "HeatCheck reads track movement so early traction is easier to spot.",
+    permission: "HeatRadar reads track movement so early traction is easier to spot.",
   },
 ];
 
 export const emptyStates = {
   connectedAccounts: {
     title: "Connect one account to start feeling the heat",
-    body: "Start with Spotify or YouTube. HeatCheck only needs enough signal to show what is beginning to move.",
+    body: "Start with Spotify or YouTube. HeatRadar only needs enough signal to show what is beginning to move.",
   },
   insights: {
     title: "No fresh signals yet",
@@ -277,11 +277,11 @@ export const emptyStates = {
   },
   traction: {
     title: "Your traction read is warming up",
-    body: "Small numbers still matter. HeatCheck will call out early saves, repeat listens, and new pockets of attention.",
+    body: "Small numbers still matter. HeatRadar will call out early saves, repeat listens, and new pockets of attention.",
   },
   audience: {
     title: "Audience mix is warming up",
-    body: "Segments appear once HeatCheck has enough mock listener behavior to make the read useful.",
+    body: "Segments appear once HeatRadar has enough mock listener behavior to make the read useful.",
   },
   audienceGrowth: {
     title: "Audience growth starts with tiny signals",
@@ -306,7 +306,7 @@ export const heatScoreEducation = [
   },
   {
     title: "Engagement",
-    body: "Saves, replays, shares, and comments tell HeatCheck whether people are leaning in.",
+    body: "Saves, replays, shares, and comments tell HeatRadar whether people are leaning in.",
   },
   {
     title: "Release activity",
@@ -314,14 +314,14 @@ export const heatScoreEducation = [
   },
   {
     title: "Cross-platform traction",
-    body: "HeatCheck looks across connected platforms so one strong signal does not get buried.",
+    body: "HeatRadar looks across connected platforms so one strong signal does not get buried.",
   },
 ];
 
 export const trialPlan = {
   daysLeft: 7,
   price: "$4.99/month",
-  headline: "Try HeatCheck Pro free for 7 days",
+  headline: "Try HeatRadar Pro free for 7 days",
   body: "Unlock deeper heat explanations, share cards, and platform-by-platform traction reads. No real payment is connected in this prototype.",
   lockedFeatures: [
     "Full cross-platform Heat Score breakdown",

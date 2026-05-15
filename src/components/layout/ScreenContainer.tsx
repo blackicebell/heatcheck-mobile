@@ -33,7 +33,7 @@ export function ScreenContainer({
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom", "left", "right"]}>
       {scroll ? (
         <ScrollView
           showsVerticalScrollIndicator={false}

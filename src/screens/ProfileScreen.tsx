@@ -106,7 +106,7 @@ export function ProfileScreen() {
 
       <SectionHeader title="Account" />
       <LockedFeatureCard
-        title="HeatCheck Pro"
+        title="HeatRadar Pro"
         body="Unlock deeper score explanations, weekly heat recaps, and shareable milestone cards after the free trial."
         onPress={() => navigation.navigate("TrialPaywall")}
       />

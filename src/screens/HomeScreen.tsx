@@ -156,7 +156,7 @@ export function HomeScreen() {
       >
         <AppText muted>{dashboard.nextMove}</AppText>
         <AppText>
-          This is a fake but realistic read: HeatCheck is showing the clearest
+          This is a fake but realistic read: HeatRadar is showing the clearest
           growth signal behind your Heat Score, then turning it into one move
           that could keep the lift going.
         </AppText>

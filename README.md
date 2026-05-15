@@ -1,6 +1,6 @@
-# HeatCheck
+# HeatRadar
 
-HeatCheck is a mobile-first growth tracking prototype for independent music artists. It helps artists understand audience traction, engagement movement, release performance, and Heat Score growth in a way that feels simple, premium, motivating, and emotionally rewarding.
+HeatRadar is a mobile-first growth tracking prototype for independent music artists. It helps artists understand audience traction, engagement movement, release performance, and Heat Score growth in a way that feels simple, premium, motivating, and emotionally rewarding.
 
 The product should feel like the app artists open to see if they are getting heat. It should not feel like enterprise analytics software, productivity tooling, or generic creator SaaS.
 

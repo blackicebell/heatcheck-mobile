@@ -2,7 +2,7 @@
 
 ## Current Prototype Status
 
-HeatCheck is currently a frontend-only Expo React Native prototype. It is designed to validate product direction, UX flows, copy, information hierarchy, and emotional retention mechanics.
+HeatRadar is currently a frontend-only Expo React Native prototype. It is designed to validate product direction, UX flows, copy, information hierarchy, and emotional retention mechanics.
 
 The app is not production-ready yet because there is no real backend, authentication, platform data, push notification delivery, native sharing, or subscription implementation.
 

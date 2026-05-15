@@ -46,7 +46,7 @@ Potential Pro features:
 
 - full cross-platform Heat Score breakdown
 - shareable milestone cards
-- weekly HeatCheck recap
+- weekly HeatRadar recap
 - deeper release traction history
 - advanced notification controls
 - platform-by-platform signal explanations

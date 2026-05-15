@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "HeatCheck",
-    "slug": "heatcheck",
+    "name": "HeatRadar",
+    "slug": "heatradar",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "scheme": "heatcheck",
+    "scheme": "heatradar",
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true

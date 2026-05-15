@@ -45,7 +45,7 @@ This should wait until real historical data exists.
 - collaborator notes
 - lightweight permissions
 
-Avoid turning HeatCheck into task management.
+Avoid turning HeatRadar into task management.
 
 ## Label Tools
 

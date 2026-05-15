@@ -4,7 +4,7 @@ Real push notifications are not currently implemented. The current notification 
 
 ## Philosophy
 
-Notifications are a core retention mechanic for HeatCheck. They should make artists feel:
+Notifications are a core retention mechanic for HeatRadar. They should make artists feel:
 
 - encouraged
 - validated
