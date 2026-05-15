@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "HeatCheck",
+    "slug": "heatcheck",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "heatcheck",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#050608"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
