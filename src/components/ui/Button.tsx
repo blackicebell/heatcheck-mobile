@@ -11,7 +11,7 @@ type ButtonProps = {
   loading?: boolean;
   onPress?: () => void;
   style?: ViewStyle;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "text";
 };
 
 export function Button({
@@ -33,14 +33,22 @@ export function Button({
         styles.base,
         !isPrimary ? styles.secondary : undefined,
         variant === "ghost" ? styles.ghost : undefined,
+        variant === "text" ? styles.text : undefined,
         disabled ? styles.disabled : undefined,
         pressed && !disabled ? styles.pressed : undefined,
         style,
       ]}
     >
       {isPrimary ? (
-        <LinearGradient colors={gradients.primary} style={styles.fill}>
-          {loading ? <ActivityIndicator color={colors.black} /> : <ButtonLabel>{children}</ButtonLabel>}
+        <LinearGradient
+          colors={disabled ? [colors.surfaceSoft, colors.surfaceSoft] : gradients.primary}
+          style={styles.fill}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.black} />
+          ) : (
+            <ButtonLabel disabled={disabled}>{children}</ButtonLabel>
+          )}
         </LinearGradient>
       ) : (
         <>
@@ -51,13 +59,13 @@ export function Button({
   );
 }
 
-function ButtonLabel({ children }: { children: ReactNode }) {
+function ButtonLabel({ children, disabled }: { children: ReactNode; disabled?: boolean }) {
   if (isValidElement(children)) {
     return children;
   }
 
   return (
-    <AppText variant="body" style={styles.label}>
+    <AppText variant="body" style={[styles.label, disabled ? styles.disabledLabel : undefined]}>
       {children}
     </AppText>
   );
@@ -87,16 +95,25 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderColor: "transparent",
   },
+  text: {
+    minHeight: 34,
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    paddingHorizontal: spacing.sm,
+  },
   label: {
     color: colors.white,
     fontWeight: "800",
     textAlign: "center",
+  },
+  disabledLabel: {
+    color: colors.textSubtle,
   },
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 1,
   },
 });

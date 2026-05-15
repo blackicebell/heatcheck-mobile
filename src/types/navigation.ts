@@ -2,6 +2,7 @@ export type AuthStackParamList = {
   Splash: undefined;
   Onboarding: undefined;
   Login: undefined;
+  ArtistSetup: undefined;
   AppTabs: undefined;
   Notifications: undefined;
   HeatScoreEducation: undefined;

@@ -3,31 +3,30 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
-  updateProfile,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
-
 import {
-  AnimatedView,
-  AppText,
-  Button,
-  Card,
-  ScreenContainer,
-  SectionHeader,
-} from "@/components";
+  KeyboardAvoidingView,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
+
+import { AnimatedView, AppText, Button, ScreenContainer, SectionHeader } from "@/components";
+import googleLogo from "@/assets/brand/google-g.png";
+import { auth } from "@/services/firebase";
 import { colors, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";
-import { auth, db } from "@/services/firebase";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
 export function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"signIn" | "create">("create");
-  const [artistName, setArtistName] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");
@@ -41,8 +40,7 @@ export function LoginScreen({ navigation }: Props) {
   const canContinue =
     email.trim().length > 0 &&
     passwordIssues.length === 0 &&
-    passwordsMatch &&
-    (!isCreatingAccount || artistName.trim().length > 0);
+    passwordsMatch;
 
   async function continueWithAccount() {
     if (!canContinue || loading) {
@@ -62,15 +60,8 @@ export function LoginScreen({ navigation }: Props) {
           : signInWithEmailAndPassword(auth, emailValue, password),
       );
 
-      if (isCreatingAccount) {
-        const displayName = artistName.trim();
-
-        await updateProfile(result.user, { displayName });
-        saveUserProfile(result.user.uid, displayName, emailValue);
-      }
-
       notifySuccess();
-      navigation.replace("AppTabs");
+      navigation.replace(result.user.displayName ? "AppTabs" : "ArtistSetup");
     } catch (authError) {
       setError(getAuthMessage(authError));
     } finally {
@@ -101,6 +92,21 @@ export function LoginScreen({ navigation }: Props) {
     }
   }
 
+  function continueWithGoogle() {
+    impactLight();
+    setResetMessage("");
+    setError(
+      "Google sign-in is enabled in Firebase. Next we need a development build so Google can redirect back into HeatRadar.",
+    );
+  }
+
+  function toggleMode() {
+    impactLight();
+    setError("");
+    setResetMessage("");
+    setMode(isCreatingAccount ? "signIn" : "create");
+  }
+
   return (
     <ScreenContainer>
       <KeyboardAvoidingView
@@ -110,150 +116,126 @@ export function LoginScreen({ navigation }: Props) {
         <View style={styles.content}>
           <AnimatedView delay={80}>
             <SectionHeader
-              title={isCreatingAccount ? "Create your HeatRadar account." : "Welcome back."}
+              title={isCreatingAccount ? "Create your account." : "Welcome back."}
               body={
                 isCreatingAccount
-                  ? "Start with the basics. You can connect your music platforms after your account is ready."
-                  : "Sign in to check your Heat Score, alerts, and latest listener movement."
+                  ? "Create a secure account. We’ll ask for your artist profile next."
+                  : "Sign in to check your Heat Score, alerts, and listener movement."
               }
             />
           </AnimatedView>
-          <AnimatedView delay={180}>
-            <Card elevated>
-              {isCreatingAccount ? (
-                <View style={styles.field}>
-                  <AppText variant="tiny" muted>
-                    Artist name
-                  </AppText>
-                  <TextInput
-                    autoCapitalize="words"
-                    onChangeText={setArtistName}
-                    placeholder="Maya Vale"
-                    placeholderTextColor={colors.textSubtle}
-                    returnKeyType="next"
-                    style={styles.input}
-                    value={artistName}
-                  />
-                </View>
-              ) : null}
-              <View style={styles.field}>
-                <AppText variant="tiny" muted>
-                  Email
-                </AppText>
+
+          <AnimatedView delay={160} style={styles.form}>
+            <Field label="Email">
+              <TextInput
+                autoCapitalize="none"
+                autoComplete="email"
+                inputMode="email"
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.textSubtle}
+                returnKeyType="next"
+                style={styles.input}
+                textContentType="emailAddress"
+                value={email}
+              />
+            </Field>
+
+            <Field label="Password">
+              <View style={styles.passwordRow}>
                 <TextInput
                   autoCapitalize="none"
-                  autoComplete="email"
-                  inputMode="email"
-                  keyboardType="email-address"
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
+                  onChangeText={setPassword}
+                  placeholder="At least 8 characters"
                   placeholderTextColor={colors.textSubtle}
-                  returnKeyType="next"
-                  style={styles.input}
-                  textContentType="emailAddress"
-                  value={email}
+                  returnKeyType={isCreatingAccount ? "next" : "done"}
+                  secureTextEntry={!showPassword}
+                  style={styles.passwordInput}
+                  textContentType={isCreatingAccount ? "newPassword" : "password"}
+                  value={password}
                 />
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setShowPassword((value) => !value)}
+                  style={styles.showButton}
+                >
+                  <AppText variant="small">{showPassword ? "Hide" : "Show"}</AppText>
+                </Pressable>
               </View>
-              <View style={styles.field}>
-                <AppText variant="tiny" muted>
-                  Password
-                </AppText>
-                <View style={styles.passwordRow}>
-                  <TextInput
-                    autoCapitalize="none"
-                    onChangeText={setPassword}
-                    placeholder="At least 8 characters"
-                    placeholderTextColor={colors.textSubtle}
-                    returnKeyType={isCreatingAccount ? "next" : "done"}
-                    secureTextEntry={!showPassword}
-                    style={styles.passwordInput}
-                    textContentType={isCreatingAccount ? "newPassword" : "password"}
-                    value={password}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setShowPassword((value) => !value)}
-                    style={styles.showButton}
-                  >
-                    <AppText variant="small">
-                      {showPassword ? "Hide" : "Show"}
-                    </AppText>
-                  </Pressable>
-                </View>
-                {isCreatingAccount ? (
-                  <View style={styles.rules}>
-                    {passwordRules.map((rule) => {
-                      const met = rule.test(password);
+              {isCreatingAccount && password ? (
+                <View style={styles.rules}>
+                  {passwordRules.map((rule) => {
+                    const met = rule.test(password);
 
-                      return (
-                        <AppText
-                          key={rule.label}
-                          variant="small"
-                          style={met ? styles.ruleMet : styles.ruleMuted}
-                        >
-                          {met ? "✓" : "•"} {rule.label}
-                        </AppText>
-                      );
-                    })}
-                  </View>
-                ) : null}
-              </View>
-              {isCreatingAccount ? (
-                <View style={styles.field}>
-                  <AppText variant="tiny" muted>
-                    Confirm password
-                  </AppText>
-                  <TextInput
-                    autoCapitalize="none"
-                    onChangeText={setConfirmPassword}
-                    placeholder="Re-enter your password"
-                    placeholderTextColor={colors.textSubtle}
-                    returnKeyType="done"
-                    secureTextEntry={!showPassword}
-                    style={[
-                      styles.input,
-                      confirmPassword && !passwordsMatch ? styles.inputError : undefined,
-                    ]}
-                    textContentType="newPassword"
-                    value={confirmPassword}
-                  />
-                  {confirmPassword && !passwordsMatch ? (
-                    <AppText variant="small" style={styles.error}>
-                      Passwords do not match yet.
-                    </AppText>
-                  ) : null}
+                    return (
+                      <AppText
+                        key={rule.label}
+                        variant="small"
+                        style={met ? styles.ruleMet : styles.ruleMuted}
+                      >
+                        {met ? "OK" : "-"} {rule.label}
+                      </AppText>
+                    );
+                  })}
                 </View>
               ) : null}
-              {error ? (
-                <AppText variant="small" style={styles.error}>
-                  {error}
-                </AppText>
-              ) : null}
-              {resetMessage ? (
-                <AppText variant="small" style={styles.success}>
-                  {resetMessage}
-                </AppText>
-              ) : null}
-            </Card>
+            </Field>
+
+            {isCreatingAccount ? (
+              <Field label="Confirm password">
+                <TextInput
+                  autoCapitalize="none"
+                  onChangeText={setConfirmPassword}
+                  placeholder="Re-enter your password"
+                  placeholderTextColor={colors.textSubtle}
+                  returnKeyType="done"
+                  secureTextEntry={!showPassword}
+                  style={[
+                    styles.input,
+                    confirmPassword && !passwordsMatch ? styles.inputError : undefined,
+                  ]}
+                  textContentType="newPassword"
+                  value={confirmPassword}
+                />
+                {confirmPassword && !passwordsMatch ? (
+                  <AppText variant="small" style={styles.error}>
+                    Passwords do not match yet.
+                  </AppText>
+                ) : null}
+              </Field>
+            ) : null}
+
+            {error ? (
+              <AppText variant="small" style={styles.error}>
+                {error}
+              </AppText>
+            ) : null}
+            {resetMessage ? (
+              <AppText variant="small" style={styles.success}>
+                {resetMessage}
+              </AppText>
+            ) : null}
           </AnimatedView>
         </View>
+
         <View style={styles.actions}>
           <Button disabled={!canContinue} loading={loading} onPress={continueWithAccount}>
             {isCreatingAccount ? "Create account" : "Sign in"}
           </Button>
-          <Button
-            variant="ghost"
-            onPress={() => {
-              impactLight();
-              setError("");
-              setResetMessage("");
-              setMode(isCreatingAccount ? "signIn" : "create");
-            }}
-          >
+          <View style={styles.dividerRow}>
+            <View style={styles.divider} />
+            <AppText variant="tiny" muted>
+              or
+            </AppText>
+            <View style={styles.divider} />
+          </View>
+          <GoogleButton onPress={continueWithGoogle} />
+          <Button variant="text" onPress={toggleMode}>
             {isCreatingAccount ? "I already have an account" : "Create a new account"}
           </Button>
           {!isCreatingAccount ? (
-            <Button variant="ghost" onPress={sendResetEmail}>
+            <Button variant="text" onPress={sendResetEmail}>
               Forgot password?
             </Button>
           ) : null}
@@ -263,20 +245,48 @@ export function LoginScreen({ navigation }: Props) {
   );
 }
 
+function Field({ children, label }: { children: React.ReactNode; label: string }) {
+  return (
+    <View style={styles.field}>
+      <AppText variant="tiny" muted>
+        {label}
+      </AppText>
+      {children}
+    </View>
+  );
+}
+
+function GoogleButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.googleButton, pressed ? styles.pressed : undefined]}
+    >
+      <Image source={googleLogo} style={styles.googleLogo} />
+      <AppText variant="body" style={styles.googleLabel}>
+        Continue with Google
+      </AppText>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
   content: {
-    flex: 1,
-    justifyContent: "center",
-    gap: spacing.xl,
+    gap: spacing.lg,
+  },
+  form: {
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
   field: {
     gap: spacing.sm,
   },
   input: {
-    minHeight: 54,
+    minHeight: 50,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -287,7 +297,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   passwordRow: {
-    minHeight: 54,
+    minHeight: 50,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -297,20 +307,20 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     flex: 1,
-    minHeight: 54,
+    minHeight: 50,
     paddingHorizontal: spacing.md,
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
   },
   showButton: {
-    minHeight: 54,
+    minHeight: 50,
     paddingHorizontal: spacing.md,
     alignItems: "center",
     justifyContent: "center",
   },
   rules: {
-    gap: spacing.xs,
+    gap: 4,
   },
   ruleMet: {
     color: colors.green,
@@ -328,8 +338,42 @@ const styles = StyleSheet.create({
     color: colors.green,
   },
   actions: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxl,
+  },
+  googleButton: {
+    minHeight: 56,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: spacing.md,
-    paddingBottom: spacing.lg,
+    backgroundColor: colors.white,
+  },
+  googleLogo: {
+    width: 22,
+    height: 22,
+    resizeMode: "contain",
+  },
+  googleLabel: {
+    color: colors.black,
+    fontWeight: "800",
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
   },
 });
 
@@ -361,21 +405,6 @@ function withTimeout<T>(promise: Promise<T>) {
       }, 12000);
     }),
   ]);
-}
-
-function saveUserProfile(userId: string, artistName: string, email: string) {
-  withTimeout(
-    setDoc(
-      doc(db, "users", userId),
-      {
-        artistName,
-        createdAt: serverTimestamp(),
-        email,
-        plan: "free",
-      },
-      { merge: true },
-    ),
-  ).catch(() => undefined);
 }
 
 function getAuthMessage(error: unknown) {
