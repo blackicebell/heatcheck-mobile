@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AudienceScreen } from "@/screens/AudienceScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { InsightsScreen } from "@/screens/InsightsScreen";
-import { ProfileScreen } from "@/screens/ProfileScreen";
 import { ReleasesScreen } from "@/screens/ReleasesScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
 import { colors } from "@/theme";
@@ -18,7 +17,6 @@ const icons: Record<keyof AppTabParamList, keyof typeof Ionicons.glyphMap> = {
   Insights: "analytics",
   Releases: "disc",
   Audience: "people",
-  Profile: "person-circle",
   Settings: "settings",
 };
 
@@ -79,7 +77,6 @@ export function AppTabs() {
       <Tab.Screen name="Insights" component={InsightsScreen} />
       <Tab.Screen name="Releases" component={ReleasesScreen} />
       <Tab.Screen name="Audience" component={AudienceScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );

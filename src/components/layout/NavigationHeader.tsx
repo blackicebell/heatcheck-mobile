@@ -8,6 +8,8 @@ type NavigationHeaderProps = {
   badge?: boolean;
   label?: string;
   onActionPress?: () => void;
+  onSecondaryActionPress?: () => void;
+  secondaryActionIcon?: keyof typeof Ionicons.glyphMap;
   title?: string;
   actionIcon?: keyof typeof Ionicons.glyphMap;
 };
@@ -17,6 +19,8 @@ export function NavigationHeader({
   badge,
   label,
   onActionPress,
+  onSecondaryActionPress,
+  secondaryActionIcon,
   title,
 }: NavigationHeaderProps) {
   return (
@@ -29,15 +33,28 @@ export function NavigationHeader({
         ) : null}
         {title ? <AppText variant="h2">{title}</AppText> : null}
       </View>
-      {actionIcon ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onActionPress}
-          style={({ pressed }) => [styles.action, pressed ? styles.pressed : undefined]}
-        >
-          <Ionicons name={actionIcon} size={20} color={colors.text} />
-          {badge ? <View style={styles.badge} /> : null}
-        </Pressable>
+      {actionIcon || secondaryActionIcon ? (
+        <View style={styles.actions}>
+          {actionIcon ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onActionPress}
+              style={({ pressed }) => [styles.action, pressed ? styles.pressed : undefined]}
+            >
+              <Ionicons name={actionIcon} size={20} color={colors.text} />
+              {badge ? <View style={styles.badge} /> : null}
+            </Pressable>
+          ) : null}
+          {secondaryActionIcon ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onSecondaryActionPress}
+              style={({ pressed }) => [styles.action, pressed ? styles.pressed : undefined]}
+            >
+              <Ionicons name={secondaryActionIcon} size={20} color={colors.text} />
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
@@ -60,6 +77,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   pressed: {
     opacity: 0.74,

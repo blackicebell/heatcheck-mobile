@@ -185,37 +185,37 @@ export const audienceSegments = [
 
 export const settings = [
   {
-    label: "Heat alerts",
+    label: "Heat Alerts",
     body: "Notify me when listener movement spikes.",
     enabled: true,
   },
   {
-    label: "Engagement alerts",
+    label: "Engagement Alerts",
     body: "Tell me when listeners are saving, replaying, or responding more than usual.",
     enabled: true,
   },
   {
-    label: "Release alerts",
+    label: "Release Alerts",
     body: "Alert me when a song starts picking up.",
     enabled: true,
   },
   {
-    label: "Milestone alerts",
+    label: "Milestone Alerts",
     body: "Celebrate meaningful audience growth without overdoing it.",
     enabled: true,
   },
   {
-    label: "Weekly summaries",
+    label: "Weekly Summaries",
     body: "A calm recap of heat, engagement, and release movement.",
     enabled: true,
   },
   {
-    label: "Push notifications",
+    label: "Push Notifications",
     body: "Mock-only push preference for future notification delivery.",
     enabled: false,
   },
   {
-    label: "Quiet mode",
+    label: "Quiet Mode",
     body: "Reduce nonessential alerts during creative time.",
     enabled: false,
   },

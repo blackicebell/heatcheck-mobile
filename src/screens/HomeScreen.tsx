@@ -147,6 +147,11 @@ export function HomeScreen() {
           impactLight();
           navigation.navigate("Notifications");
         }}
+        secondaryActionIcon="person-circle"
+        onSecondaryActionPress={() => {
+          impactLight();
+          navigation.navigate("Profile");
+        }}
       />
       <View style={styles.heatReadCard}>
         <View style={styles.heatReadAccent} />

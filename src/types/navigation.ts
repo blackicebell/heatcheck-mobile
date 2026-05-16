@@ -5,6 +5,7 @@ export type AuthStackParamList = {
   ArtistSetup: undefined;
   AppTabs: undefined;
   Notifications: undefined;
+  Profile: undefined;
   HeatScoreEducation: undefined;
   TrialPaywall: undefined;
 };
@@ -14,6 +15,5 @@ export type AppTabParamList = {
   Insights: undefined;
   Releases: undefined;
   Audience: undefined;
-  Profile: undefined;
   Settings: undefined;
 };
