@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import {
@@ -34,6 +34,7 @@ import {
   getAudiusConnection,
   getAudiusTracksByHandle,
 } from "@/services/audius";
+import { calculateHeatScore } from "@/services/heatScore";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
@@ -51,6 +52,15 @@ export function HomeScreen() {
   const { refresh, refreshing } = useMockRefresh(900);
   const topAudiusTrack = audiusTracks[0];
   const topSpotifyTrack = spotifyConnection?.topTracks[0];
+  const heatScoreRead = useMemo(
+    () =>
+      calculateHeatScore({
+        audiusTracks,
+        spotifyConnection,
+        youtubeConnection,
+      }),
+    [audiusTracks, spotifyConnection, youtubeConnection],
+  );
 
   const loadAudiusSignal = useCallback(async () => {
     const connection = await getAudiusConnection();
@@ -119,7 +129,7 @@ export function HomeScreen() {
           navigation.navigate("Notifications");
         }}
       />
-      <SectionHeader title={dashboard.headline} />
+      <SectionHeader title={heatScoreRead.headline} />
       <AnimatedView>
         <Card elevated>
           <View style={styles.scoreRow}>
@@ -127,19 +137,19 @@ export function HomeScreen() {
               <AppText variant="tiny" muted>
                 Heat Score
               </AppText>
-              <AppText variant="title">{dashboard.heatScore}</AppText>
+              <AppText variant="title">{heatScoreRead.score}</AppText>
             </View>
             <View style={styles.pill}>
               <AppText variant="small" style={styles.pillText}>
-                {dashboard.weeklyChange}
+                {heatScoreRead.weeklyChange}
               </AppText>
             </View>
           </View>
-          <MiniBarChart data={dashboard.sparkline} />
+          <MiniBarChart data={heatScoreRead.sparkline} />
           <View style={styles.explainStack}>
-            <AppText>{dashboard.scoreExplanation}</AppText>
-            <AppText muted>{dashboard.scoreBoost}</AppText>
-            <AppText muted>{dashboard.scoreAction}</AppText>
+            <AppText>{heatScoreRead.explanation}</AppText>
+            <AppText muted>{heatScoreRead.scoreBoost}</AppText>
+            <AppText muted>{heatScoreRead.action}</AppText>
             <Pressable
               accessibilityRole="button"
               onPress={() => navigation.navigate("HeatScoreEducation")}
@@ -152,9 +162,9 @@ export function HomeScreen() {
         </Card>
       </AnimatedView>
       <SectionHeader title="What's driving it" />
-      {dashboard.contributors.length > 0 ? (
+      {heatScoreRead.contributors.length > 0 ? (
         <View style={styles.stats}>
-          {dashboard.contributors.map((item, index) => (
+          {heatScoreRead.contributors.map((item, index) => (
             <AnimatedView key={item.label} delay={index * 80} style={styles.statItem}>
               <StatCard {...item} />
             </AnimatedView>
@@ -327,7 +337,7 @@ export function HomeScreen() {
       <AnimatedView delay={280}>
         <Card>
           <View style={styles.pressableCopy}>
-            <TractionAlert title="Best next move" body={dashboard.nextMove} />
+            <TractionAlert title="Best next move" body={heatScoreRead.action} />
             <Pressable accessibilityRole="button" onPress={openAlert}>
               <AppText variant="small" style={styles.linkText}>
                 View why this matters
@@ -341,11 +351,10 @@ export function HomeScreen() {
         onClose={() => setAlertOpen(false)}
         title="Best next move"
       >
-        <AppText muted>{dashboard.nextMove}</AppText>
+        <AppText muted>{heatScoreRead.action}</AppText>
         <AppText>
-          This is a fake but realistic read: HeatRadar is showing the clearest
-          growth signal behind your Heat Score, then turning it into one move
-          that could keep the lift going.
+          HeatRadar is reading your clearest connected platform signal, then
+          turning it into one simple move that could keep the lift going.
         </AppText>
       </BottomSheetModal>
     </ScreenContainer>
