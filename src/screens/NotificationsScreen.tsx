@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useMemo, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import {
@@ -16,16 +17,26 @@ import {
 import {
   notificationCooldown,
   notificationGroups,
-  notifications,
   emptyStates,
+  releases,
   retentionHighlights,
 } from "@/data/mockData";
+import {
+  AudiusTrack,
+  getAudiusConnection,
+  getAudiusTracksByHandle,
+} from "@/services/audius";
+import { buildReleaseRadar, ReleaseRadarItem } from "@/services/releaseRadar";
+import { buildSignalNotifications, SignalNotification } from "@/services/signalNotifications";
+import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
+import { getPlatformSyncStatuses } from "@/services/syncStatus";
+import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Notifications">;
-type HeatNotification = (typeof notifications)[number];
+type HeatNotification = SignalNotification;
 
 const categoryColors: Record<string, string> = {
   "Heat Movement": colors.green,
@@ -36,8 +47,20 @@ const categoryColors: Record<string, string> = {
 };
 
 export function NotificationsScreen({ navigation }: Props) {
-  const [items, setItems] = useState(notifications);
+  const [items, setItems] = useState<HeatNotification[]>(() =>
+    buildSignalNotifications({
+      audiusTracks: [],
+      releaseRadar: [],
+      spotifyConnection: null,
+      syncStatuses: {},
+      youtubeConnection: null,
+    }),
+  );
+  const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
+  const [releaseRadar, setReleaseRadar] = useState<ReleaseRadarItem[]>([]);
   const [selected, setSelected] = useState<HeatNotification | null>(null);
+  const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const unreadCount = items.filter((item) => item.unread).length;
 
   const grouped = useMemo(
@@ -49,6 +72,55 @@ export function NotificationsScreen({ navigation }: Props) {
         }))
         .filter((group) => group.items.length > 0),
     [items],
+  );
+
+  const loadNotificationSignals = useCallback(async () => {
+    const [
+      savedAudiusConnection,
+      savedSpotifyConnection,
+      savedSyncStatuses,
+      savedYouTubeConnection,
+    ] = await Promise.all([
+      getAudiusConnection(),
+      getSpotifyConnection(),
+      getPlatformSyncStatuses(),
+      getYouTubeConnection(),
+    ]);
+    let savedAudiusTracks: AudiusTrack[] = [];
+
+    if (savedAudiusConnection) {
+      try {
+        savedAudiusTracks = await getAudiusTracksByHandle(savedAudiusConnection.handle);
+      } catch {
+        savedAudiusTracks = [];
+      }
+    }
+
+    const nextReleaseRadar = buildReleaseRadar({
+      audiusTracks: savedAudiusTracks,
+      baseReleases: releases,
+      spotifyConnection: savedSpotifyConnection,
+      youtubeConnection: savedYouTubeConnection,
+    });
+    const nextItems = buildSignalNotifications({
+      audiusTracks: savedAudiusTracks,
+      releaseRadar: nextReleaseRadar,
+      spotifyConnection: savedSpotifyConnection,
+      syncStatuses: savedSyncStatuses,
+      youtubeConnection: savedYouTubeConnection,
+    });
+
+    setAudiusTracks(savedAudiusTracks);
+    setSpotifyConnection(savedSpotifyConnection);
+    setYouTubeConnection(savedYouTubeConnection);
+    setReleaseRadar(nextReleaseRadar);
+    setItems(nextItems);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNotificationSignals();
+    }, [loadNotificationSignals]),
   );
 
   function openNotification(item: HeatNotification) {
@@ -88,7 +160,7 @@ export function NotificationsScreen({ navigation }: Props) {
       <SectionHeader
         eyebrow={`${unreadCount} unread`}
         title="Something might be moving."
-        body="A calm feed of the moments worth opening the app for."
+        body={getNotificationIntro(audiusTracks, spotifyConnection, youtubeConnection)}
       />
 
       <View style={styles.highlightRow}>
@@ -105,7 +177,11 @@ export function NotificationsScreen({ navigation }: Props) {
           <AppText variant="h3">Smart cooldown</AppText>
         </View>
         <AppText>{notificationCooldown.summary}</AppText>
-        <AppText muted>{notificationCooldown.detail}</AppText>
+        <AppText muted>
+          {releaseRadar.length > 0
+            ? "HeatRadar is prioritizing the freshest connected signal instead of filling the feed with noise."
+            : notificationCooldown.detail}
+        </AppText>
       </Card>
 
       {grouped.length > 0 ? (
@@ -256,3 +332,25 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
 });
+
+function getNotificationIntro(
+  audiusTracks: AudiusTrack[],
+  spotifyConnection: SpotifyConnection | null,
+  youtubeConnection: YouTubeConnection | null,
+) {
+  const connectedSignals = [
+    audiusTracks.length > 0,
+    Boolean(spotifyConnection),
+    Boolean(youtubeConnection),
+  ].filter(Boolean).length;
+
+  if (connectedSignals >= 3) {
+    return "A calm feed of the strongest connected platform moments worth opening for.";
+  }
+
+  if (connectedSignals > 0) {
+    return "A focused feed based on the connected signals HeatRadar can already read.";
+  }
+
+  return "A calm feed of the moments worth opening the app for.";
+}
