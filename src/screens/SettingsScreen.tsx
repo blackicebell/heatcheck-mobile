@@ -30,6 +30,11 @@ import {
 import { clearLocalArtistProfile } from "@/services/artistProfile";
 import { auth } from "@/services/firebase";
 import {
+  SpotifyConnection,
+  connectSpotifyAccount,
+  getSpotifyConnection,
+} from "@/services/spotify";
+import {
   YouTubeConnection,
   connectYouTubeChannel,
   getYouTubeConnection,
@@ -53,6 +58,8 @@ export function SettingsScreen() {
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [searchingAudius, setSearchingAudius] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [spotifyError, setSpotifyError] = useState("");
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const [youtubeError, setYouTubeError] = useState("");
   const [toggleStates, setToggleStates] = useState(() =>
@@ -63,8 +70,9 @@ export function SettingsScreen() {
     let active = true;
 
     async function loadConnections() {
-      const [savedAudiusConnection, savedYouTubeConnection] = await Promise.all([
+      const [savedAudiusConnection, savedSpotifyConnection, savedYouTubeConnection] = await Promise.all([
         getAudiusConnection(),
+        getSpotifyConnection(),
         getYouTubeConnection(),
       ]);
 
@@ -81,6 +89,11 @@ export function SettingsScreen() {
       if (savedYouTubeConnection) {
         setYouTubeConnection(savedYouTubeConnection);
         markYouTubeConnected(savedYouTubeConnection);
+      }
+
+      if (savedSpotifyConnection) {
+        setSpotifyConnection(savedSpotifyConnection);
+        markSpotifyConnected(savedSpotifyConnection);
       }
     }
 
@@ -107,6 +120,16 @@ export function SettingsScreen() {
 
       if (!youtubeConnection) {
         connectYouTube();
+      }
+
+      return;
+    }
+
+    if (platform.id === "spotify") {
+      setConnectionModal(platform);
+
+      if (!spotifyConnection) {
+        connectSpotify();
       }
 
       return;
@@ -220,6 +243,41 @@ export function SettingsScreen() {
           ? {
               ...item,
               detail: connection.customUrl ?? connection.title,
+              status: "Connected",
+            }
+          : item,
+      ),
+    );
+  }
+
+  async function connectSpotify() {
+    if (connectingId === "spotify") {
+      return;
+    }
+
+    impactLight();
+    setSpotifyError("");
+    setConnectingId("spotify");
+
+    try {
+      const savedConnection = await connectSpotifyAccount();
+      setSpotifyConnection(savedConnection);
+      markSpotifyConnected(savedConnection);
+      notifySuccess();
+    } catch (error) {
+      setSpotifyError(getSpotifyErrorMessage(error));
+    } finally {
+      setConnectingId(null);
+    }
+  }
+
+  function markSpotifyConnected(connection: SpotifyConnection) {
+    setConnections((items) =>
+      items.map((item) =>
+        item.id === "spotify"
+          ? {
+              ...item,
+              detail: connection.displayName,
               status: "Connected",
             }
           : item,
@@ -384,6 +442,13 @@ export function SettingsScreen() {
               error={youtubeError}
               loading={connectingId === "youtube"}
               onConnect={connectYouTube}
+            />
+          ) : connectionModal.id === "spotify" ? (
+            <SpotifyConnectionContent
+              connection={spotifyConnection}
+              error={spotifyError}
+              loading={connectingId === "spotify"}
+              onConnect={connectSpotify}
             />
           ) : (
             <>
@@ -683,6 +748,75 @@ function getYouTubeErrorMessage(error: unknown) {
   }
 
   return "YouTube did not connect yet. Make sure the YouTube Data API is enabled for this Google project, then try again.";
+}
+
+type SpotifyConnectionContentProps = {
+  connection: SpotifyConnection | null;
+  error: string;
+  loading: boolean;
+  onConnect: () => void;
+};
+
+function SpotifyConnectionContent({
+  connection,
+  error,
+  loading,
+  onConnect,
+}: SpotifyConnectionContentProps) {
+  if (connection) {
+    const topTrack = connection.topTracks[0];
+
+    return (
+      <>
+        <AppText variant="h2">Spotify is connected</AppText>
+        <AppText muted>
+          {connection.displayName} is connected with read-only Spotify access.
+        </AppText>
+        <View style={styles.youtubeMetricGrid}>
+          <MetricPill label={`${formatCompactNumber(connection.followers)} followers`} />
+          <MetricPill label={`${connection.topTracks.length} top tracks`} />
+        </View>
+        {topTrack ? (
+          <AppText muted>
+            Current top track context: {topTrack.name} by {topTrack.artist}.
+          </AppText>
+        ) : (
+          <AppText muted>
+            Spotify is connected. HeatRadar will show top-track context once Spotify returns enough listening history.
+          </AppText>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <AppText variant="h2">Connect Spotify</AppText>
+      <AppText muted>
+        HeatRadar asks for read-only Spotify access to understand profile and listening context. Spotify public APIs do not include private Spotify for Artists analytics.
+      </AppText>
+      <Button loading={loading} onPress={onConnect}>
+        Continue with Spotify
+      </Button>
+      {error ? (
+        <AppText variant="small" style={styles.failed}>
+          {error}
+        </AppText>
+      ) : null}
+    </>
+  );
+}
+
+function getSpotifyErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message === "spotify-cancelled") {
+    return "Spotify connection was cancelled. You can try again anytime.";
+  }
+
+  if (error instanceof Error && error.message === "spotify-profile-failed") {
+    return "Spotify connected, but profile data did not come back yet. Try again in a moment.";
+  }
+
+  return "Spotify did not connect yet. Check that your Spotify redirect URI is heatradar://spotify-auth, then try again.";
 }
 
 function getConnectionStyle(status: ConnectionStatus) {
