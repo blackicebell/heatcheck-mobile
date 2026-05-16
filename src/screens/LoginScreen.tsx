@@ -1,9 +1,13 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithCredential,
 } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -17,12 +21,19 @@ import {
 
 import { AnimatedView, AppText, Button, ScreenContainer, SectionHeader } from "@/components";
 import googleLogo from "@/assets/brand/google-g.png";
-import { auth } from "@/services/firebase";
+import { auth, db } from "@/services/firebase";
 import { colors, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
+
+const googleWebClientId =
+  "717353489884-58ran11gduia9jo59gbj0uunkjhaj3e4.apps.googleusercontent.com";
+
+GoogleSignin.configure({
+  webClientId: googleWebClientId,
+});
 
 export function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
@@ -61,7 +72,7 @@ export function LoginScreen({ navigation }: Props) {
       );
 
       notifySuccess();
-      navigation.replace(result.user.displayName ? "AppTabs" : "ArtistSetup");
+      navigation.replace((await needsArtistSetup(result.user.uid)) ? "ArtistSetup" : "AppTabs");
     } catch (authError) {
       setError(getAuthMessage(authError));
     } finally {
@@ -92,12 +103,40 @@ export function LoginScreen({ navigation }: Props) {
     }
   }
 
-  function continueWithGoogle() {
+  async function continueWithGoogle() {
+    if (loading) {
+      return;
+    }
+
     impactLight();
+    setError("");
     setResetMessage("");
-    setError(
-      "Google sign-in is enabled in Firebase. Next we need a development build so Google can redirect back into HeatRadar.",
-    );
+    setLoading(true);
+
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+
+      if (response.type !== "success") {
+        return;
+      }
+
+      const { idToken } = response.data;
+
+      if (!idToken) {
+        throw new Error("missing-google-token");
+      }
+
+      const credential = GoogleAuthProvider.credential(idToken);
+      const result = await withTimeout(signInWithCredential(auth, credential));
+
+      notifySuccess();
+      navigation.replace((await needsArtistSetup(result.user.uid)) ? "ArtistSetup" : "AppTabs");
+    } catch (authError) {
+      setError(getAuthMessage(authError));
+    } finally {
+      setLoading(false);
+    }
   }
 
   function toggleMode() {
@@ -119,7 +158,7 @@ export function LoginScreen({ navigation }: Props) {
               title={isCreatingAccount ? "Create your account." : "Welcome back."}
               body={
                 isCreatingAccount
-                  ? "Create a secure account. We’ll ask for your artist profile next."
+                  ? "Create a secure account. We'll ask for your artist profile next."
                   : "Sign in to check your Heat Score, alerts, and listener movement."
               }
             />
@@ -230,7 +269,7 @@ export function LoginScreen({ navigation }: Props) {
             </AppText>
             <View style={styles.divider} />
           </View>
-          <GoogleButton onPress={continueWithGoogle} />
+          <GoogleButton loading={loading} onPress={continueWithGoogle} />
           <Button variant="text" onPress={toggleMode}>
             {isCreatingAccount ? "I already have an account" : "Create a new account"}
           </Button>
@@ -256,12 +295,17 @@ function Field({ children, label }: { children: React.ReactNode; label: string }
   );
 }
 
-function GoogleButton({ onPress }: { onPress: () => void }) {
+function GoogleButton({ loading, onPress }: { loading?: boolean; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
+      disabled={loading}
       onPress={onPress}
-      style={({ pressed }) => [styles.googleButton, pressed ? styles.pressed : undefined]}
+      style={({ pressed }) => [
+        styles.googleButton,
+        loading ? styles.googleButtonDisabled : undefined,
+        pressed && !loading ? styles.pressed : undefined,
+      ]}
     >
       <Image source={googleLogo} style={styles.googleLogo} />
       <AppText variant="body" style={styles.googleLabel}>
@@ -352,6 +396,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     backgroundColor: colors.white,
   },
+  googleButtonDisabled: {
+    opacity: 0.55,
+  },
   googleLogo: {
     width: 22,
     height: 22,
@@ -407,15 +454,38 @@ function withTimeout<T>(promise: Promise<T>) {
   ]);
 }
 
+async function needsArtistSetup(userId: string) {
+  const snapshot = await withTimeout(getDoc(doc(db, "users", userId)));
+  const artistName = snapshot.exists() ? snapshot.data().artistName : undefined;
+
+  return typeof artistName !== "string" || artistName.trim().length < 2;
+}
+
 function getAuthMessage(error: unknown) {
   if (error instanceof Error && error.message === "auth-timeout") {
     return "Firebase is taking too long to respond. Check that Email/Password sign-in is enabled, then try again.";
+  }
+
+  if (error instanceof Error && error.message === "missing-google-token") {
+    return "Google did not return a sign-in token. Try again in a moment.";
   }
 
   const code =
     typeof error === "object" && error !== null && "code" in error
       ? String(error.code)
       : "";
+
+  if (code === statusCodes.SIGN_IN_CANCELLED) {
+    return "";
+  }
+
+  if (code === statusCodes.IN_PROGRESS) {
+    return "Google sign-in is already open.";
+  }
+
+  if (code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+    return "Google Play Services needs to be updated before Google sign-in can work.";
+  }
 
   if (code.includes("email-already-in-use")) {
     return "That email already has an account. Try signing in instead.";

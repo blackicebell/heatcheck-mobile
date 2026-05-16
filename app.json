@@ -13,11 +13,11 @@
       "supportsTablet": true
     },
     "android": {
-  "package": "com.blackicebell.heatradar",
-  "googleServicesFile": "./google-services.json",
-  "adaptiveIcon": {
-    "backgroundColor": "#050608"
-  }
+      "package": "com.blackicebell.heatradar",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "backgroundColor": "#050608"
+      }
     },
     "web": {
       "bundler": "metro"
@@ -29,7 +29,8 @@
     },
     "owner": "blackicebell",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }
