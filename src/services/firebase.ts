@@ -14,18 +14,6 @@ const firebaseConfig = {
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
-export const auth = initializePersistentAuth();
-export const db = getFirestore(firebaseApp);
-
-function initializePersistentAuth() {
-  try {
-    return initializeAuth(firebaseApp, {
-      persistence: asyncStoragePersistence,
-    });
-  } catch {
-    return getAuth(firebaseApp);
-  }
-}
 
 const asyncStoragePersistence = {
   type: "LOCAL",
@@ -42,3 +30,16 @@ const asyncStoragePersistence = {
     await AsyncStorage.removeItem(key);
   },
 } as Persistence;
+
+export const auth = initializePersistentAuth();
+export const db = getFirestore(firebaseApp);
+
+function initializePersistentAuth() {
+  try {
+    return initializeAuth(firebaseApp, {
+      persistence: asyncStoragePersistence,
+    });
+  } catch {
+    return getAuth(firebaseApp);
+  }
+}
