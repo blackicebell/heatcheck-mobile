@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import {
   AppText,
@@ -29,8 +30,11 @@ import {
 } from "@/services/syncStatus";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
+import { AuthStackParamList } from "@/types/navigation";
 
-export function ProfileScreen() {
+type Props = NativeStackScreenProps<AuthStackParamList, "Profile">;
+
+export function ProfileScreen({ navigation }: Props) {
   const artistIdentity = useArtistIdentity();
   const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
@@ -91,6 +95,15 @@ export function ProfileScreen() {
 
   return (
     <ScreenContainer>
+      <View style={styles.nav}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
+        </Pressable>
+      </View>
       <NavigationHeader label="Artist profile" actionIcon="person-circle" />
       <View style={styles.profileHeader}>
         <LinearGradient
@@ -163,6 +176,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  nav: {
+    minHeight: 48,
+    alignItems: "flex-start",
+    justifyContent: "center",
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   avatar: {
     width: 86,

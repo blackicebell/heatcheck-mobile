@@ -44,10 +44,13 @@ import {
   markPlatformSyncSuccess,
 } from "@/services/syncStatus";
 import {
+  YouTubeChannel,
   YouTubeConnection,
   clearYouTubeConnection,
   connectYouTubeChannel,
+  getAvailableYouTubeChannels,
   getYouTubeConnection,
+  saveYouTubeChannelConnection,
 } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { impactLight, notifySuccess } from "@/utils/haptics";
@@ -78,6 +81,7 @@ export function SettingsScreen() {
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [spotifyError, setSpotifyError] = useState("");
   const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
+  const [youtubeChannelChoices, setYouTubeChannelChoices] = useState<YouTubeChannel[]>([]);
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const [youtubeError, setYouTubeError] = useState("");
   const [toggleStates, setToggleStates] = useState(() =>
@@ -146,7 +150,7 @@ export function SettingsScreen() {
       setConnectionModal(platform);
 
       if (!youtubeConnection) {
-        connectYouTube();
+        connectYouTube({ forceAccountSelection: true });
       }
 
       return;
@@ -275,17 +279,30 @@ export function SettingsScreen() {
     notifySuccess();
   }
 
-  async function connectYouTube() {
+  async function connectYouTube({ forceAccountSelection = false } = {}) {
     if (connectingId === "youtube") {
       return;
     }
 
     impactLight();
     setYouTubeError("");
+    setYouTubeChannelChoices([]);
     setConnectingId("youtube");
 
     try {
-      const savedConnection = await connectYouTubeChannel();
+      const channels = forceAccountSelection
+        ? await getAvailableYouTubeChannels({ forceAccountSelection: true })
+        : await getAvailableYouTubeChannels();
+
+      if (channels.length > 1) {
+        setYouTubeChannelChoices(channels);
+        setConnectingId(null);
+        return;
+      }
+
+      const savedConnection = channels[0]
+        ? await saveYouTubeChannelConnection(channels[0])
+        : await connectYouTubeChannel({ forceAccountSelection });
       setYouTubeConnection(savedConnection);
       markYouTubeConnected(savedConnection);
       await updateSyncSuccess("youtube", "YouTube refreshed.");
@@ -293,6 +310,26 @@ export function SettingsScreen() {
     } catch (error) {
       await updateSyncFailed("youtube", "Could not refresh YouTube.");
       setYouTubeError(getYouTubeErrorMessage(error));
+    } finally {
+      setConnectingId(null);
+    }
+  }
+
+  async function selectYouTubeChannel(channel: YouTubeChannel) {
+    impactLight();
+    setYouTubeError("");
+    setConnectingId("youtube");
+
+    try {
+      const savedConnection = await saveYouTubeChannelConnection(channel);
+      setYouTubeConnection(savedConnection);
+      setYouTubeChannelChoices([]);
+      markYouTubeConnected(savedConnection);
+      await updateSyncSuccess("youtube", "YouTube refreshed.");
+      notifySuccess();
+    } catch {
+      await updateSyncFailed("youtube", "Could not save YouTube.");
+      setYouTubeError("We could not save that YouTube channel yet. Try again.");
     } finally {
       setConnectingId(null);
     }
@@ -317,6 +354,7 @@ export function SettingsScreen() {
     await clearYouTubeConnection();
     await clearPlatformStatus("youtube");
     setYouTubeConnection(null);
+    setYouTubeChannelChoices([]);
     setYouTubeError("");
     resetPlatformConnection("youtube");
     notifySuccess();
@@ -577,10 +615,12 @@ export function SettingsScreen() {
             />
           ) : connectionModal.id === "youtube" ? (
             <YouTubeConnectionContent
+              channelChoices={youtubeChannelChoices}
               connection={youtubeConnection}
               error={youtubeError}
               loading={connectingId === "youtube"}
-              onConnect={connectYouTube}
+              onChannelSelect={selectYouTubeChannel}
+              onConnect={() => connectYouTube({ forceAccountSelection: true })}
               onDisconnect={disconnectYouTube}
               onRefresh={connectYouTube}
               syncStatus={syncStatuses.youtube}
@@ -1027,9 +1067,11 @@ function formatCompactNumber(value: number) {
 }
 
 type YouTubeConnectionContentProps = {
+  channelChoices: YouTubeChannel[];
   connection: YouTubeConnection | null;
   error: string;
   loading: boolean;
+  onChannelSelect: (channel: YouTubeChannel) => void;
   onConnect: () => void;
   onDisconnect: () => void;
   onRefresh: () => void;
@@ -1037,9 +1079,11 @@ type YouTubeConnectionContentProps = {
 };
 
 function YouTubeConnectionContent({
+  channelChoices,
   connection,
   error,
   loading,
+  onChannelSelect,
   onConnect,
   onDisconnect,
   onRefresh,
@@ -1076,11 +1120,52 @@ function YouTubeConnectionContent({
     );
   }
 
+  if (channelChoices.length > 1) {
+    return (
+      <>
+        <AppText variant="h2">Choose your YouTube channel</AppText>
+        <AppText muted>
+          Pick the channel you want HeatRadar to use for video-side movement.
+        </AppText>
+        <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+          {channelChoices.map((channel) => (
+            <Pressable
+              accessibilityRole="button"
+              key={channel.id}
+              onPress={() => onChannelSelect(channel)}
+              style={({ pressed }) => [styles.resultCard, pressed ? styles.pressed : undefined]}
+            >
+              <View style={styles.resultHeader}>
+                <View style={styles.copy}>
+                  <AppText variant="h3">{channel.snippet.title}</AppText>
+                  <AppText muted>{channel.snippet.customUrl ?? channel.id}</AppText>
+                </View>
+                <AppText variant="small" style={styles.connect}>
+                  Use this
+                </AppText>
+              </View>
+              <View style={styles.metricRow}>
+                <MetricPill label={`${formatCompactNumber(Number(channel.statistics?.viewCount ?? 0))} views`} />
+                <MetricPill label={`${formatCompactNumber(Number(channel.statistics?.subscriberCount ?? 0))} subscribers`} />
+                <MetricPill label={`${formatCompactNumber(Number(channel.statistics?.videoCount ?? 0))} videos`} />
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
+        {error ? (
+          <AppText variant="small" style={styles.failed}>
+            {error}
+          </AppText>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <>
       <AppText variant="h2">Connect YouTube</AppText>
       <AppText muted>
-        HeatRadar asks for read-only YouTube access so it can read channel and video movement. It will not upload, edit, or delete anything.
+        HeatRadar asks for read-only YouTube access so it can read channel and video movement. If your Google account has more than one channel, you will choose which one to connect.
       </AppText>
       <Button loading={loading} onPress={onConnect}>
         Continue with Google

@@ -36,12 +36,22 @@ type YouTubeChannelResponse = {
   items?: YouTubeChannel[];
 };
 
-export async function connectYouTubeChannel() {
+type ConnectYouTubeOptions = {
+  forceAccountSelection?: boolean;
+};
+
+export async function getAvailableYouTubeChannels({
+  forceAccountSelection = false,
+}: ConnectYouTubeOptions = {}) {
   configureGoogleSignin();
 
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-  if (!GoogleSignin.hasPreviousSignIn()) {
+  if (forceAccountSelection && GoogleSignin.hasPreviousSignIn()) {
+    await GoogleSignin.signOut();
+  }
+
+  if (forceAccountSelection || !GoogleSignin.hasPreviousSignIn()) {
     const response = await GoogleSignin.signIn();
 
     if (response.type !== "success") {
@@ -58,7 +68,21 @@ export async function connectYouTubeChannel() {
   }
 
   const { accessToken } = await GoogleSignin.getTokens();
-  const channel = await getMyYouTubeChannel(accessToken);
+  return getMyYouTubeChannels(accessToken);
+}
+
+export async function connectYouTubeChannel(options?: ConnectYouTubeOptions) {
+  const channels = await getAvailableYouTubeChannels(options);
+  const channel = channels[0];
+
+  if (!channel) {
+    throw new Error("youtube-channel-not-found");
+  }
+
+  return saveYouTubeChannelConnection(channel);
+}
+
+export async function saveYouTubeChannelConnection(channel: YouTubeChannel) {
   const connection = toYouTubeConnection(channel);
 
   await AsyncStorage.setItem(youtubeConnectionStorageKey, JSON.stringify(connection));
@@ -84,7 +108,7 @@ export async function clearYouTubeConnection() {
   await AsyncStorage.removeItem(youtubeConnectionStorageKey);
 }
 
-async function getMyYouTubeChannel(accessToken: string) {
+async function getMyYouTubeChannels(accessToken: string) {
   const params = new URLSearchParams({
     mine: "true",
     part: "snippet,statistics",
@@ -100,13 +124,13 @@ async function getMyYouTubeChannel(accessToken: string) {
   }
 
   const payload = (await response.json()) as YouTubeChannelResponse;
-  const channel = payload.items?.[0];
+  const channels = payload.items ?? [];
 
-  if (!channel) {
+  if (channels.length === 0) {
     throw new Error("youtube-channel-not-found");
   }
 
-  return channel;
+  return channels;
 }
 
 function toYouTubeConnection(channel: YouTubeChannel): YouTubeConnection {
