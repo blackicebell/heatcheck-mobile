@@ -77,7 +77,9 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxl + 34,
     justifyContent: "flex-end",
     gap: spacing.xl,
   },

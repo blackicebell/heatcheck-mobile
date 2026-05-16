@@ -1,4 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -31,9 +33,7 @@ export function OnboardingScreen({ navigation }: Props) {
     <ScreenContainer scroll={false}>
       <View style={styles.stage}>
         <AnimatedView delay={80}>
-          <View style={[styles.orbit, { borderColor: slide.accent }]}>
-            <View style={[styles.orbitCore, { backgroundColor: slide.accent }]} />
-          </View>
+          <OnboardingVisual index={index} accent={slide.accent} />
         </AnimatedView>
         <AnimatedView delay={180} style={styles.copy}>
           <AppText variant="h1">{slide.title}</AppText>
@@ -71,20 +71,130 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.xxl,
   },
-  orbit: {
+  visualCard: {
     width: "100%",
     aspectRatio: 1,
     maxHeight: 330,
     borderRadius: radii.xl,
     borderWidth: 1,
+    padding: spacing.lg,
+    overflow: "hidden",
     backgroundColor: colors.surface,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  visualContent: {
+    flex: 1,
+    justifyContent: "space-between",
+  },
+  visualTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  visualBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  visualBadgeText: {
+    color: colors.white,
+    fontWeight: "900",
+  },
+  visualIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  radarStage: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  orbitCore: {
-    width: 116,
-    height: 116,
-    borderRadius: 58,
+  radarRingLarge: {
+    width: 206,
+    height: 206,
+    borderRadius: 103,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  radarRingMedium: {
+    width: 146,
+    height: 146,
+    borderRadius: 73,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  radarCore: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  signalDot: {
+    position: "absolute",
+    right: 42,
+    top: 78,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.white,
+  },
+  barStage: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: spacing.sm,
+    paddingTop: spacing.xl,
+  },
+  signalBar: {
+    flex: 1,
+    minHeight: 42,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  waveformStage: {
+    flex: 1,
+    justifyContent: "center",
+    gap: spacing.md,
+  },
+  waveformRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  waveformTick: {
+    width: 9,
+    borderRadius: 6,
+  },
+  liftCard: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    backgroundColor: "rgba(5,6,8,0.42)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  liftRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  liftPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(68,240,138,0.14)",
   },
   copy: {
     gap: spacing.md,
@@ -108,3 +218,138 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
 });
+
+function OnboardingVisual({ accent, index }: { accent: string; index: number }) {
+  const gradients = getVisualGradient(index);
+
+  return (
+    <LinearGradient
+      colors={gradients}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.visualCard, { borderColor: `${accent}55` }]}
+    >
+      <View style={styles.visualContent}>
+        <View style={styles.visualTopRow}>
+          <View style={styles.visualBadge}>
+            <AppText variant="tiny" style={styles.visualBadgeText}>
+              {getVisualLabel(index)}
+            </AppText>
+          </View>
+          <View style={styles.visualIcon}>
+            <Ionicons name={getVisualIcon(index)} size={21} color={accent} />
+          </View>
+        </View>
+        {index === 0 ? <RadarVisual accent={accent} /> : null}
+        {index === 1 ? <SignalBarsVisual accent={accent} /> : null}
+        {index === 2 ? <LiftVisual accent={accent} /> : null}
+      </View>
+    </LinearGradient>
+  );
+}
+
+function RadarVisual({ accent }: { accent: string }) {
+  return (
+    <View style={styles.radarStage}>
+      <View style={[styles.radarRingLarge, { borderColor: `${accent}35` }]}>
+        <View style={[styles.radarRingMedium, { borderColor: `${accent}55` }]}>
+          <View style={[styles.radarCore, { backgroundColor: accent }]}>
+            <Ionicons name="radio" size={30} color={colors.black} />
+          </View>
+        </View>
+      </View>
+      <View style={[styles.signalDot, { backgroundColor: accent }]} />
+    </View>
+  );
+}
+
+function SignalBarsVisual({ accent }: { accent: string }) {
+  const heights = [76, 132, 104, 174, 148];
+
+  return (
+    <View style={styles.barStage}>
+      {heights.map((height, barIndex) => (
+        <View
+          key={height}
+          style={[
+            styles.signalBar,
+            {
+              height,
+              backgroundColor: barIndex === 3 ? accent : "rgba(255,255,255,0.16)",
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+function LiftVisual({ accent }: { accent: string }) {
+  const waveform = [26, 62, 38, 94, 48, 72, 32, 58, 28];
+
+  return (
+    <View style={styles.waveformStage}>
+      <View style={styles.waveformRow}>
+        {waveform.map((height, waveIndex) => (
+          <View
+            key={`${height}-${waveIndex}`}
+            style={[
+              styles.waveformTick,
+              {
+                height,
+                backgroundColor: waveIndex === 3 || waveIndex === 5 ? accent : "rgba(255,255,255,0.22)",
+              },
+            ]}
+          />
+        ))}
+      </View>
+      <View style={styles.liftCard}>
+        <View style={styles.liftRow}>
+          <AppText variant="h3">Heat lift</AppText>
+          <View style={styles.liftPill}>
+            <AppText variant="tiny" style={{ color: colors.green }}>
+              +18%
+            </AppText>
+          </View>
+        </View>
+        <AppText muted>Signals are moving in the right direction.</AppText>
+      </View>
+    </View>
+  );
+}
+
+function getVisualGradient(index: number): [string, string] {
+  if (index === 1) {
+    return ["rgba(114,167,255,0.32)", "rgba(17,19,24,0.98)"];
+  }
+
+  if (index === 2) {
+    return ["rgba(255,104,179,0.3)", "rgba(17,19,24,0.98)"];
+  }
+
+  return ["rgba(68,240,138,0.3)", "rgba(17,19,24,0.98)"];
+}
+
+function getVisualLabel(index: number) {
+  if (index === 1) {
+    return "WHY IT MOVED";
+  }
+
+  if (index === 2) {
+    return "FEEL THE LIFT";
+  }
+
+  return "SIGNAL RADAR";
+}
+
+function getVisualIcon(index: number): keyof typeof Ionicons.glyphMap {
+  if (index === 1) {
+    return "analytics";
+  }
+
+  if (index === 2) {
+    return "trending-up";
+  }
+
+  return "pulse";
+}
