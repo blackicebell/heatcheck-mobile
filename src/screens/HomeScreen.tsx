@@ -161,14 +161,24 @@ export function HomeScreen() {
                   A
                 </AppText>
               </View>
-              <View style={styles.pressableCopy}>
-                <AppText variant="h3">Audius signal</AppText>
+              <View style={styles.signalCopy}>
+                <View style={styles.signalTitleRow}>
+                  <AppText variant="h3">Audius is moving</AppText>
+                  <View style={styles.realSignalPill}>
+                    <AppText variant="tiny" style={styles.realSignalText}>
+                      Real signal
+                    </AppText>
+                  </View>
+                </View>
                 <AppText muted>@{audiusConnection.handle}</AppText>
               </View>
             </View>
             {topAudiusTrack ? (
               <>
-                <AppText>
+                <AppText variant="h2" style={styles.trackTitle}>
+                  {topAudiusTrack.title}
+                </AppText>
+                <AppText muted>
                   {topAudiusTrack.title} is your top public Audius track right now.
                 </AppText>
                 <View style={styles.signalMetrics}>
@@ -176,8 +186,8 @@ export function HomeScreen() {
                   <SignalMetric label="Favorites" value={formatCompactNumber(topAudiusTrack.favorite_count)} />
                   <SignalMetric label="Reposts" value={formatCompactNumber(topAudiusTrack.repost_count)} />
                 </View>
-                <AppText muted>
-                  Early favorites and reposts are giving HeatRadar a first real traction read.
+                <AppText style={styles.signalRead}>
+                  {getAudiusSignalRead(topAudiusTrack)}
                 </AppText>
               </>
             ) : (
@@ -282,7 +292,7 @@ const styles = StyleSheet.create({
   },
   signalHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: spacing.md,
   },
   signalIcon: {
@@ -296,16 +306,44 @@ const styles = StyleSheet.create({
   signalIconText: {
     color: colors.black,
   },
+  signalCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  signalTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  realSignalPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(68,240,138,0.14)",
+  },
+  realSignalText: {
+    color: colors.green,
+    fontWeight: "800",
+  },
+  trackTitle: {
+    color: colors.white,
+  },
   signalMetrics: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   signalMetric: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "30%",
     gap: spacing.xs,
     padding: spacing.sm,
     borderRadius: 16,
     backgroundColor: colors.surfaceSoft,
+  },
+  signalRead: {
+    color: colors.text,
   },
 });
 
@@ -325,4 +363,16 @@ function formatCompactNumber(value: number) {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
+}
+
+function getAudiusSignalRead(track: AudiusTrack) {
+  if (track.repost_count > 0 && track.favorite_count > 0) {
+    return "Favorites and reposts are giving this track a real early traction read.";
+  }
+
+  if (track.play_count > 0) {
+    return "Plays are starting to give HeatRadar a first public movement signal.";
+  }
+
+  return "HeatRadar is watching this track for the first signs of movement.";
 }

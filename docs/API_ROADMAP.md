@@ -70,12 +70,14 @@ Potential data:
 
 Risks:
 
+- registering a SoundCloud API application currently requires a SoundCloud Artist Pro subscription
 - advanced SoundCloud Insights may depend on SoundCloud account tier or API access
 - verify available analytics before promising deep SoundCloud stats
 
 OAuth:
 
-- SoundCloud OAuth required for private/account-level data
+- SoundCloud OAuth 2.1 with PKCE is required for private/account-level data
+- refresh tokens are single-use and should be rotated server-side
 - backend should store encrypted refresh tokens
 
 ## Phase 2: YouTube
