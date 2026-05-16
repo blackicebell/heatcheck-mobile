@@ -10,7 +10,6 @@ import {
   Card,
   EmptyState,
   LoadingSkeleton,
-  LockedFeatureCard,
   MiniBarChart,
   NavigationHeader,
   ScreenContainer,
@@ -188,6 +187,26 @@ export function HomeScreen() {
           </View>
         </Card>
       </AnimatedView>
+      <AnimatedView delay={80}>
+        <Card elevated>
+          <View style={styles.pressableCopy}>
+            <TractionAlert title="Best next move" body={heatScoreRead.action} />
+            <Pressable accessibilityRole="button" onPress={openAlert}>
+              <AppText variant="small" style={styles.linkText}>
+                View why this matters
+              </AppText>
+            </Pressable>
+          </View>
+        </Card>
+      </AnimatedView>
+      <SectionHeader title="Since your last alert" />
+      <View style={styles.stats}>
+        {retentionHighlights.map((item, index) => (
+          <AnimatedView key={item.label} delay={index * 80} style={styles.statItem}>
+            <StatCard label={item.label} value={item.value} />
+          </AnimatedView>
+        ))}
+      </View>
       <SectionHeader title="What's driving it" />
       {heatScoreRead.contributors.length > 0 ? (
         <View style={styles.stats}>
@@ -200,20 +219,6 @@ export function HomeScreen() {
       ) : (
         <EmptyState icon="flame" {...emptyStates.traction} />
       )}
-      <Card>
-        <View style={styles.syncHeader}>
-          <View style={styles.copy}>
-            <AppText variant="h3">Sync check</AppText>
-            <AppText muted>{getOverallSyncRead(syncStatuses)}</AppText>
-          </View>
-          {refreshing ? <AppText variant="small" style={styles.pillText}>Syncing...</AppText> : null}
-        </View>
-        <View style={styles.syncList}>
-          <HomeSyncRow label="Audius" status={syncStatuses.audius} />
-          <HomeSyncRow label="YouTube" status={syncStatuses.youtube} />
-          <HomeSyncRow label="Spotify" status={syncStatuses.spotify} />
-        </View>
-      </Card>
       {audiusConnection ? (
         <AnimatedView delay={160}>
           <Card elevated>
@@ -344,21 +349,6 @@ export function HomeScreen() {
           </Card>
         </AnimatedView>
       ) : null}
-      <SectionHeader title="Since your last alert" />
-      <View style={styles.stats}>
-        {retentionHighlights.map((item, index) => (
-          <AnimatedView key={item.label} delay={index * 80} style={styles.statItem}>
-            <StatCard label={item.label} value={item.value} />
-          </AnimatedView>
-        ))}
-      </View>
-      <AnimatedView delay={240}>
-        <LockedFeatureCard
-          title="Share your heat"
-          body="Turn big moments into premium milestone cards for fans and collaborators. Native sharing comes later."
-          onPress={() => navigation.navigate("TrialPaywall")}
-        />
-      </AnimatedView>
       <SectionHeader title="Share card previews" />
       <View style={styles.shareGrid}>
         {shareCards.map((card) => (
@@ -367,18 +357,20 @@ export function HomeScreen() {
           </View>
         ))}
       </View>
-      <AnimatedView delay={280}>
-        <Card>
-          <View style={styles.pressableCopy}>
-            <TractionAlert title="Best next move" body={heatScoreRead.action} />
-            <Pressable accessibilityRole="button" onPress={openAlert}>
-              <AppText variant="small" style={styles.linkText}>
-                View why this matters
-              </AppText>
-            </Pressable>
+      <Card>
+        <View style={styles.syncHeader}>
+          <View style={styles.copy}>
+            <AppText variant="h3">Sync check</AppText>
+            <AppText muted>{getOverallSyncRead(syncStatuses)}</AppText>
           </View>
-        </Card>
-      </AnimatedView>
+          {refreshing ? <AppText variant="small" style={styles.pillText}>Syncing...</AppText> : null}
+        </View>
+        <View style={styles.syncList}>
+          <HomeSyncRow label="Audius" status={syncStatuses.audius} />
+          <HomeSyncRow label="YouTube" status={syncStatuses.youtube} />
+          <HomeSyncRow label="Spotify" status={syncStatuses.spotify} />
+        </View>
+      </Card>
       <BottomSheetModal
         visible={alertOpen}
         onClose={() => setAlertOpen(false)}
