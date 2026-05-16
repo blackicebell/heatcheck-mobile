@@ -7,7 +7,6 @@ import {
   signInWithEmailAndPassword,
   signInWithCredential,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -21,7 +20,8 @@ import {
 
 import { AnimatedView, AppText, Button, ScreenContainer, SectionHeader } from "@/components";
 import googleLogo from "@/assets/brand/google-g.png";
-import { auth, db } from "@/services/firebase";
+import { needsArtistSetup } from "@/services/artistProfile";
+import { auth } from "@/services/firebase";
 import { colors, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";
@@ -453,17 +453,6 @@ function withTimeout<T>(promise: Promise<T>, timeoutCode = "request-timeout") {
       }, 25000);
     }),
   ]);
-}
-
-async function needsArtistSetup(userId: string) {
-  try {
-    const snapshot = await withTimeout(getDoc(doc(db, "users", userId)), "profile-timeout");
-    const artistName = snapshot.exists() ? snapshot.data().artistName : undefined;
-
-    return typeof artistName !== "string" || artistName.trim().length < 2;
-  } catch {
-    return true;
-  }
 }
 
 function getAuthMessage(error: unknown) {

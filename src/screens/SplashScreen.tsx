@@ -1,15 +1,47 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { onAuthStateChanged } from "firebase/auth";
+import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AnimatedView, AppText, Button } from "@/components";
+import { needsArtistSetup } from "@/services/artistProfile";
+import { auth } from "@/services/firebase";
 import { colors, gradients, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Splash">;
 
 export function SplashScreen({ navigation }: Props) {
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!active) {
+        return;
+      }
+
+      if (!user) {
+        setCheckingSession(false);
+        return;
+      }
+
+      const route = (await needsArtistSetup(user.uid)) ? "ArtistSetup" : "AppTabs";
+
+      if (active) {
+        navigation.replace(route);
+      }
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [navigation]);
+
   return (
     <LinearGradient colors={gradients.quiet} style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={["top", "bottom", "left", "right"]}>
@@ -25,8 +57,12 @@ export function SplashScreen({ navigation }: Props) {
           </AppText>
         </AnimatedView>
         <AnimatedView delay={280}>
-          <Button onPress={() => navigation.replace("Onboarding")}>
-            Get started
+          <Button
+            disabled={checkingSession}
+            loading={checkingSession}
+            onPress={() => navigation.replace("Onboarding")}
+          >
+            {checkingSession ? "Checking session" : "Get started"}
           </Button>
         </AnimatedView>
       </SafeAreaView>

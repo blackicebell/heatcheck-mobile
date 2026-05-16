@@ -1,9 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
+import { CommonActions, useNavigation } from "@react-navigation/native";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { signOut } from "firebase/auth";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
 import {
   AppText,
+  Button,
   BottomSheetModal,
   Card,
   NavigationHeader,
@@ -13,6 +17,8 @@ import {
   ToggleRow,
 } from "@/components";
 import { platformConnections, settings } from "@/data/mockData";
+import { clearLocalArtistProfile } from "@/services/artistProfile";
+import { auth } from "@/services/firebase";
 import { colors, spacing } from "@/theme";
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
@@ -20,9 +26,11 @@ type PlatformConnection = (typeof platformConnections)[number];
 type ConnectionStatus = PlatformConnection["status"];
 
 export function SettingsScreen() {
+  const navigation = useNavigation();
   const [connectionModal, setConnectionModal] = useState<PlatformConnection | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [connections, setConnections] = useState(platformConnections);
+  const [signingOut, setSigningOut] = useState(false);
   const [toggleStates, setToggleStates] = useState(() =>
     Object.fromEntries(settings.map((item) => [item.label, item.enabled])),
   );
@@ -42,6 +50,29 @@ export function SettingsScreen() {
       setConnectingId(null);
       notifySuccess();
     }, 1200);
+  }
+
+  async function handleSignOut() {
+    if (signingOut) {
+      return;
+    }
+
+    impactLight();
+    setSigningOut(true);
+
+    await Promise.allSettled([
+      GoogleSignin.signOut(),
+      signOut(auth),
+      clearLocalArtistProfile(),
+    ]);
+
+    notifySuccess();
+    navigation.getParent()?.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      }),
+    );
   }
 
   return (
@@ -133,9 +164,23 @@ export function SettingsScreen() {
       <Card>
         <AppText variant="h2">Privacy-first preview</AppText>
         <AppText muted>
-          No Firebase, APIs, authentication, or backend systems are connected in
-          this shell.
+          HeatRadar uses Firebase for account access. Platform connections are
+          still previews until Spotify, YouTube, Instagram, and SoundCloud are connected.
         </AppText>
+      </Card>
+      <SectionHeader title="Session" />
+      <Card>
+        <View style={styles.sessionCard}>
+          <View style={styles.copy}>
+            <AppText variant="h3">Signed in</AppText>
+            <AppText muted>
+              Sign out when you want to test another account or reset the login flow.
+            </AppText>
+          </View>
+          <Button variant="secondary" loading={signingOut} onPress={handleSignOut}>
+            Sign out
+          </Button>
+        </View>
       </Card>
       <BottomSheetModal
         visible={Boolean(connectionModal)}
@@ -198,6 +243,9 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.82,
     transform: [{ scale: 0.99 }],
+  },
+  sessionCard: {
+    gap: spacing.md,
   },
 });
 

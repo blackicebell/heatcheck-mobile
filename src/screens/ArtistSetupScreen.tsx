@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { updateProfile } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -6,14 +5,13 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from "react-native";
 
 import { AnimatedView, AppText, Button, ScreenContainer, SectionHeader } from "@/components";
+import { saveLocalArtistProfile } from "@/services/artistProfile";
 import { auth, db } from "@/services/firebase";
 import { colors, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "ArtistSetup">;
-
-const artistProfileStorageKey = "heatradar.artistProfile";
 
 export function ArtistSetupScreen({ navigation }: Props) {
   const [artistName, setArtistName] = useState("");
@@ -35,14 +33,11 @@ export function ArtistSetupScreen({ navigation }: Props) {
     try {
       const displayName = artistName.trim();
 
-      await AsyncStorage.setItem(
-        artistProfileStorageKey,
-        JSON.stringify({
-          artistName: displayName,
-          email: user.email,
-          userId: user.uid,
-        }),
-      );
+      await saveLocalArtistProfile({
+        artistName: displayName,
+        email: user.email,
+        userId: user.uid,
+      });
 
       const profileSave = Promise.all([
         withTimeout(updateProfile(user, { displayName }), 8000),
