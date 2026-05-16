@@ -5,7 +5,7 @@ import { db } from "@/services/firebase";
 
 const artistProfileStorageKey = "heatradar.artistProfile";
 
-type LocalArtistProfile = {
+export type LocalArtistProfile = {
   artistName: string;
   email: string | null;
   userId: string;
@@ -36,7 +36,7 @@ export async function needsArtistSetup(userId: string) {
   }
 }
 
-async function getLocalArtistProfile() {
+export async function getLocalArtistProfile() {
   const rawProfile = await AsyncStorage.getItem(artistProfileStorageKey);
 
   if (!rawProfile) {

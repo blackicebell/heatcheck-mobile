@@ -20,13 +20,13 @@ import {
   TractionAlert,
 } from "@/components";
 import {
-  artist,
   dashboard,
   emptyStates,
   loadingCopy,
   retentionHighlights,
   shareCards,
 } from "@/data/mockData";
+import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import { useMockRefresh } from "@/hooks/useMockRefresh";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
@@ -34,6 +34,7 @@ import { impactLight } from "@/utils/haptics";
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const artistIdentity = useArtistIdentity();
   const [alertOpen, setAlertOpen] = useState(false);
   const { refresh, refreshing } = useMockRefresh(900);
 
@@ -54,7 +55,7 @@ export function HomeScreen() {
   return (
     <ScreenContainer onRefresh={refresh} refreshing={refreshing}>
       <NavigationHeader
-        label={`${artist.handle} / getting heat this week`}
+        label={`${artistIdentity.handle} / getting heat this week`}
         badge
         actionIcon="notifications"
         onActionPress={() => {

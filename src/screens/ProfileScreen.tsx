@@ -15,17 +15,18 @@ import {
 } from "@/components";
 import {
   accountSettings,
-  artist,
   dashboard,
   emptyStates,
   platformConnections,
   settings,
 } from "@/data/mockData";
+import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 
 export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const artistIdentity = useArtistIdentity();
   const connectedAccounts = platformConnections.filter(
     (platform) => platform.status === "Connected",
   );
@@ -37,13 +38,13 @@ export function ProfileScreen() {
       <View style={styles.profileHeader}>
         <View style={styles.avatar}>
           <AppText variant="h1" style={styles.avatarText}>
-            {artist.initials}
+            {artistIdentity.initials}
           </AppText>
         </View>
         <View style={styles.profileCopy}>
-          <AppText variant="h1">{artist.name}</AppText>
+          <AppText variant="h1">{artistIdentity.name}</AppText>
           <AppText muted>
-            {artist.handle} / {artist.city}
+            {artistIdentity.handle} / {artistIdentity.city}
           </AppText>
         </View>
       </View>
