@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 import { AppText } from "@/components/ui/AppText";
 import { colors, radii, spacing } from "@/theme";
@@ -17,6 +18,13 @@ const toneMap = {
     accent: colors.pink,
     glow: "rgba(255,104,179,0.18)",
   },
+};
+
+const sourceIconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Audius: "musical-notes",
+  Spotify: "headset",
+  YouTube: "play",
+  HeatRadar: "trending-up",
 };
 
 type InsightCardProps = {
@@ -37,8 +45,12 @@ export function InsightCard({ title, body, source = "Signal", tone }: InsightCar
       style={styles.card}
     >
       <View style={styles.headerRow}>
-        <View style={[styles.iconOrb, { backgroundColor: toneColor.accent }]}>
-          <View style={styles.pulseLine} />
+        <View style={[styles.iconBox, { backgroundColor: toneColor.accent }]}>
+          <Ionicons
+            name={sourceIconMap[source] ?? "pulse"}
+            size={19}
+            color={colors.black}
+          />
         </View>
         <View style={[styles.sourcePill, { borderColor: toneColor.accent }]}>
           <AppText variant="tiny" style={[styles.sourceText, { color: toneColor.accent }]}>
@@ -67,18 +79,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: spacing.md,
   },
-  iconOrb: {
+  iconBox: {
     width: 42,
     height: 42,
-    borderRadius: 21,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-  },
-  pulseLine: {
-    width: 24,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.black,
   },
   sourcePill: {
     paddingHorizontal: spacing.sm,

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useMemo, useState } from "react";
@@ -21,11 +22,8 @@ import {
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import {
   AudiusConnection,
-  AudiusTrack,
   getAudiusConnection,
-  getAudiusTracksByHandle,
 } from "@/services/audius";
-import { calculateHeatScore } from "@/services/heatScore";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
 import {
   PlatformId,
@@ -40,7 +38,6 @@ export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const artistIdentity = useArtistIdentity();
   const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
-  const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
@@ -74,15 +71,7 @@ export function ProfileScreen() {
       ].filter((account) => account !== null),
     [audiusConnection, spotifyConnection, syncStatuses, youtubeConnection],
   );
-  const heatScoreRead = useMemo(
-    () =>
-      calculateHeatScore({
-        audiusTracks,
-        spotifyConnection,
-        youtubeConnection,
-      }),
-    [audiusTracks, spotifyConnection, youtubeConnection],
-  );
+  const syncedCount = Object.values(syncStatuses).filter((status) => status?.state === "success").length;
   const enabledNotifications = settings.filter((setting) => setting.enabled);
   const accountItems = [
     { label: "Plan", value: "HeatRadar Pro preview" },
@@ -105,17 +94,6 @@ export function ProfileScreen() {
     setSpotifyConnection(savedSpotifyConnection);
     setSyncStatuses(savedSyncStatuses);
     setYouTubeConnection(savedYouTubeConnection);
-
-    if (!savedAudiusConnection) {
-      setAudiusTracks([]);
-      return;
-    }
-
-    try {
-      setAudiusTracks(await getAudiusTracksByHandle(savedAudiusConnection.handle));
-    } catch {
-      setAudiusTracks([]);
-    }
   }, []);
 
   useFocusEffect(
@@ -128,11 +106,15 @@ export function ProfileScreen() {
     <ScreenContainer>
       <NavigationHeader label="Artist profile" actionIcon="person-circle" />
       <View style={styles.profileHeader}>
-        <View style={styles.avatar}>
-          <AppText variant="h1" style={styles.avatarText}>
-            {artistIdentity.initials}
-          </AppText>
-        </View>
+        <LinearGradient
+          colors={["rgba(255,104,179,0.95)", "rgba(255,207,95,0.92)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.avatar}
+        >
+          <Ionicons name="person" size={34} color={colors.black} />
+          <View style={styles.avatarPulse} />
+        </LinearGradient>
         <View style={styles.profileCopy}>
           <AppText variant="h1">{artistIdentity.name}</AppText>
           <AppText muted>
@@ -142,21 +124,24 @@ export function ProfileScreen() {
       </View>
 
       <Card elevated>
-        <View style={styles.scoreRow}>
-          <View>
-            <AppText variant="tiny" muted>
-              Heat Score
-            </AppText>
-            <AppText variant="title">{heatScoreRead.score}</AppText>
+        <View style={styles.summaryHeader}>
+          <View style={styles.summaryIcon}>
+            <Ionicons name="radio" size={22} color={colors.black} />
           </View>
-          <View style={styles.heatPill}>
-            <AppText variant="small" style={styles.heatPillText}>
-              {heatScoreRead.weeklyChange}
+          <View style={styles.copy}>
+            <AppText variant="h2">Your connected signals</AppText>
+            <AppText muted>
+              {connectedAccounts.length > 0
+                ? `${connectedAccounts.length} of 3 platforms connected. ${syncedCount} synced cleanly.`
+                : "Connect a platform to start building your artist signal profile."}
             </AppText>
           </View>
         </View>
-        <AppText>{heatScoreRead.explanation}</AppText>
-        <AppText muted>{heatScoreRead.scoreBoost}</AppText>
+        <View style={styles.summaryGrid}>
+          <SummaryMetric label="Platforms" value={`${connectedAccounts.length}/3`} />
+          <SummaryMetric label="Synced" value={`${syncedCount}/3`} />
+          <SummaryMetric label="Account" value={artistIdentity.provider} />
+        </View>
       </Card>
 
       <SectionHeader title="Connected accounts" />
@@ -231,32 +216,47 @@ const styles = StyleSheet.create({
   avatar: {
     width: 86,
     height: 86,
-    borderRadius: 43,
-    backgroundColor: colors.pink,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
   },
-  avatarText: {
-    color: colors.black,
+  avatarPulse: {
+    position: "absolute",
+    bottom: 20,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "rgba(5,6,8,0.42)",
   },
   profileCopy: {
     flex: 1,
     gap: spacing.xs,
   },
-  scoreRow: {
+  summaryHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    alignItems: "center",
     gap: spacing.md,
   },
-  heatPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
-    backgroundColor: "rgba(68,240,138,0.14)",
+  summaryIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.green,
   },
-  heatPillText: {
-    color: colors.green,
+  summaryGrid: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  summaryMetric: {
+    flex: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: 18,
+    backgroundColor: colors.surfaceSoft,
   },
   row: {
     flexDirection: "row",
@@ -271,6 +271,17 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
 });
+
+function SummaryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.summaryMetric}>
+      <AppText variant="tiny" muted>
+        {label}
+      </AppText>
+      <AppText variant="h3">{value}</AppText>
+    </View>
+  );
+}
 
 function formatSyncStatus(status?: PlatformSyncStatus) {
   if (!status) {

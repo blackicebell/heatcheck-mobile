@@ -325,24 +325,28 @@ export const trialPlan = {
 
 export const shareCards = [
   {
+    category: "HEAT SCORE",
     title: "Heat Score up",
     value: "+12%",
     body: "Audience growth and engagement pushed your score higher this week.",
     accent: "#44F08A",
   },
   {
+    category: "AUDIENCE",
     title: "Audience milestone",
     value: "1K",
     body: "You hit 1,000 total listeners.",
     accent: "#72A7FF",
   },
   {
+    category: "RELEASE",
     title: "Release traction",
     value: "91",
     body: "Soft Static is gaining stronger repeat listens.",
     accent: "#FF68B3",
   },
   {
+    category: "ENGAGEMENT",
     title: "Engagement spike",
     value: "+24%",
     body: "Your latest upload is outperforming recent posts.",

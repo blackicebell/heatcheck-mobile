@@ -42,7 +42,7 @@ export function AppTabs() {
           paddingBottom: 10,
           paddingHorizontal: 8,
           marginHorizontal: 14,
-          marginBottom: 26,
+          marginBottom: 34,
           borderRadius: 26,
           backgroundColor: "rgba(17,19,24,0.96)",
           borderColor: colors.border,

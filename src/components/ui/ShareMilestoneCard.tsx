@@ -1,11 +1,13 @@
 import { StyleSheet, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { AppText } from "@/components/ui/AppText";
-import { colors, radii, spacing } from "@/theme";
+import { radii, spacing } from "@/theme";
 
 type ShareMilestoneCardProps = {
   accent: string;
   body: string;
+  category?: string;
   title: string;
   value: string;
 };
@@ -13,31 +15,68 @@ type ShareMilestoneCardProps = {
 export function ShareMilestoneCard({
   accent,
   body,
+  category = "TRACTION",
   title,
   value,
 }: ShareMilestoneCardProps) {
   return (
-    <View style={[styles.card, { borderColor: accent }]}>
-      <AppText variant="tiny" muted>
-        HeatRadar
-      </AppText>
-      <AppText variant="h2">{title}</AppText>
-      <AppText variant="title" style={{ color: accent }}>
-        {value}
-      </AppText>
+    <LinearGradient
+      colors={[`${accent}24`, "rgba(25,28,34,0.98)"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.card, { borderColor: `${accent}55` }]}
+    >
+      <View style={styles.topRow}>
+        <View style={[styles.categoryPill, { borderColor: accent }]}>
+          <AppText variant="tiny" style={[styles.categoryText, { color: accent }]}>
+            {category}
+          </AppText>
+        </View>
+        <View style={[styles.spark, { backgroundColor: accent }]} />
+      </View>
+      <View style={styles.valueBlock}>
+        <AppText variant="title" style={{ color: accent }}>
+          {value}
+        </AppText>
+        <AppText variant="h3">{title}</AppText>
+      </View>
       <AppText muted>{body}</AppText>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 190,
-    borderRadius: radii.xl,
+    minHeight: 210,
+    borderRadius: radii.lg,
     padding: spacing.lg,
     justifyContent: "space-between",
-    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
     gap: spacing.sm,
+    overflow: "hidden",
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  categoryPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: "rgba(5,6,8,0.24)",
+  },
+  categoryText: {
+    fontWeight: "900",
+  },
+  spark: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  valueBlock: {
+    gap: spacing.xs,
   },
 });
