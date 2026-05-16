@@ -236,13 +236,6 @@ export const platformConnections = [
     permission: "HeatRadar reads public track movement and engagement. It never posts for you.",
   },
   {
-    id: "soundcloud",
-    name: "SoundCloud",
-    status: "Not connected",
-    detail: "Plays, likes, reposts",
-    permission: "HeatRadar reads track movement so early traction is easier to spot.",
-  },
-  {
     id: "youtube",
     name: "YouTube",
     status: "Reconnect",
@@ -261,7 +254,7 @@ export const platformConnections = [
 export const emptyStates = {
   connectedAccounts: {
     title: "Connect one account to start feeling the heat",
-    body: "Start with Audius or SoundCloud. HeatRadar only needs enough signal to show what is beginning to move.",
+    body: "Start with Audius or YouTube. HeatRadar only needs enough signal to show what is beginning to move.",
   },
   insights: {
     title: "No fresh signals yet",

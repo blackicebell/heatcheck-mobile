@@ -85,7 +85,6 @@ Firebase Auth is real. Artist name is saved locally and attempted in Firestore, 
 ## APIs Not Integrated Yet
 
 - Audius API
-- SoundCloud OAuth/API
 - YouTube/Google OAuth/API
 - Spotify OAuth/API
 - real push notification service
@@ -108,10 +107,9 @@ Firebase Auth is real. Artist name is saved locally and attempted in Firestore, 
 2. Clean up package versions if needed after installing dependencies.
 3. Harden Firebase Auth, Firestore rules, and user profile persistence.
 4. Add Audius as the first real platform proof of concept.
-5. Add SoundCloud OAuth/API as the second platform integration.
+5. Add YouTube/Google API as the second platform integration.
 6. Replace Heat Score mock data with backend snapshots.
-7. Add YouTube/Google API integration.
-8. Add Spotify catalog/context integration.
+7. Add Spotify catalog/context integration.
 9. Add real notification storage and read states.
 10. Implement push notifications and cooldown logic.
 11. Implement subscription entitlement handling.

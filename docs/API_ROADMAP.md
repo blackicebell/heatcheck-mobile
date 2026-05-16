@@ -8,10 +8,10 @@ HeatRadar should prioritize platforms that feel native to independent artists an
 
 1. Audius
 2. YouTube
-3. SoundCloud
-4. Spotify
+3. Spotify
 
 Shazam is intentionally out of scope. It points the product toward recognition tech instead of artist growth tracking.
+SoundCloud is also out of active scope for now because its API access path adds friction before the product needs it.
 
 ## Phase 1: Audius
 
@@ -75,41 +75,6 @@ OAuth:
 - use minimal scopes and clear permission copy
 - first pass can use `https://www.googleapis.com/auth/youtube.readonly`
 - production version should move token storage and refresh handling to the backend
-
-## Paused: SoundCloud
-
-Why early:
-
-- very relevant for indie artists, demos, remixes, DJs, and early fans
-- culturally aligned with artist discovery
-- helps HeatRadar feel less like generic streaming analytics
-
-Goals:
-
-- connect SoundCloud account or profile
-- read track-level movement where API access allows
-- support early traction cards and release movement
-
-Potential data:
-
-- plays
-- likes
-- reposts
-- comments
-- followers
-- track publish dates
-
-Risks:
-
-- registering a SoundCloud API application currently requires a SoundCloud Artist Pro subscription
-- advanced SoundCloud Insights may depend on SoundCloud account tier or API access
-- verify available analytics before promising deep SoundCloud stats
-
-OAuth:
-
-- SoundCloud OAuth 2.1 with PKCE is required for private/account-level data
-- refresh tokens are single-use and should be rotated server-side
-- backend should store encrypted refresh tokens
 
 ## Phase 3: Spotify
 

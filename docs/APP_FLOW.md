@@ -92,7 +92,6 @@ Notifications should create curiosity without pressure.
 Settings includes fake platform connections for:
 
 - Audius
-- SoundCloud
 - YouTube
 - Spotify
 

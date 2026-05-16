@@ -340,7 +340,7 @@ export function SettingsScreen() {
         <AppText variant="h2">Privacy-first preview</AppText>
         <AppText muted>
           HeatRadar uses Firebase for account access. Platform connections are
-          still previews until Audius, SoundCloud, YouTube, and Spotify are connected.
+          still previews until Audius, YouTube, and Spotify are connected.
         </AppText>
       </Card>
       <SectionHeader title="Session" />
@@ -698,7 +698,7 @@ function getConnectionStyle(status: ConnectionStatus) {
 }
 
 function getPlatformIcon(platformId: string): keyof typeof Ionicons.glyphMap {
-  if (platformId === "audius" || platformId === "soundcloud") {
+  if (platformId === "audius") {
     return "musical-notes";
   }
 
