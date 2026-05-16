@@ -14,7 +14,6 @@ import {
   ScreenContainer,
   SectionHeader,
   StaggeredList,
-  ToggleRow,
 } from "@/components";
 import { platformConnections, settings } from "@/data/mockData";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
@@ -55,6 +54,13 @@ import { impactLight, notifySuccess } from "@/utils/haptics";
 
 type PlatformConnection = (typeof platformConnections)[number];
 type ConnectionStatus = PlatformConnection["status"];
+type CompactToggleRowProps = {
+  body: string;
+  enabled: boolean;
+  label: string;
+  onChange: (enabled: boolean) => void;
+  showDivider: boolean;
+};
 
 export function SettingsScreen() {
   const navigation = useNavigation();
@@ -77,6 +83,12 @@ export function SettingsScreen() {
   const [toggleStates, setToggleStates] = useState(() =>
     Object.fromEntries(settings.map((item) => [item.label, item.enabled])),
   );
+  const accountItems = [
+    { label: "Account status", value: "Standard" },
+    { label: "Artist profile", value: artistIdentity.name },
+    { label: "Sign-in email", value: artistIdentity.email },
+    { label: "Sign-in method", value: artistIdentity.provider },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -481,22 +493,31 @@ export function SettingsScreen() {
         }}
       />
       <SectionHeader title="Notification settings" />
-      <StaggeredList
-        data={settings}
-        keyExtractor={(setting) => setting.label}
-        renderItem={(setting) => (
-          <Card>
-            <ToggleRow
-              label={setting.label}
+      <Card>
+        <View style={styles.notificationHeader}>
+          <View style={styles.notificationIcon}>
+            <Ionicons name="notifications" size={18} color={colors.black} />
+          </View>
+          <View style={styles.copy}>
+            <AppText variant="h3">Alert preferences</AppText>
+            <AppText muted>Choose the signal moments worth interrupting you for.</AppText>
+          </View>
+        </View>
+        <View style={styles.notificationList}>
+          {settings.map((setting, index) => (
+            <CompactToggleRow
+              key={setting.label}
               body={setting.body}
               enabled={Boolean(toggleStates[setting.label])}
+              label={setting.label}
+              showDivider={index < settings.length - 1}
               onChange={(enabled) =>
                 setToggleStates((state) => ({ ...state, [setting.label]: enabled }))
               }
             />
-          </Card>
-        )}
-      />
+          ))}
+        </View>
+      </Card>
       <Card>
         <AppText variant="h2">Privacy-first preview</AppText>
         <AppText muted>
@@ -504,14 +525,26 @@ export function SettingsScreen() {
           still previews until Audius, YouTube, and Spotify are connected.
         </AppText>
       </Card>
-      <SectionHeader title="Session" />
+      <SectionHeader title="Account" />
       <Card>
         <View style={styles.sessionCard}>
+          <View style={styles.accountList}>
+            {accountItems.map((item, index) => (
+              <View
+                key={item.label}
+                style={[
+                  styles.accountRow,
+                  index < accountItems.length - 1 ? styles.accountRowDivider : undefined,
+                ]}
+              >
+                <AppText variant="small">{item.label}</AppText>
+                <AppText variant="small" muted style={styles.accountValue}>
+                  {item.value}
+                </AppText>
+              </View>
+            ))}
+          </View>
           <View style={styles.copy}>
-            <AppText variant="h3">Signed in as {artistIdentity.name}</AppText>
-            <AppText muted>
-              {artistIdentity.email} / {artistIdentity.provider}
-            </AppText>
             <AppText variant="small" muted>
               Sign out when you want to test another account or reset the login flow.
             </AppText>
@@ -622,6 +655,77 @@ const styles = StyleSheet.create({
   },
   sessionCard: {
     gap: spacing.md,
+  },
+  notificationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  notificationIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.green,
+  },
+  notificationList: {
+    marginTop: spacing.sm,
+  },
+  compactToggleRow: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  compactToggleDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  compactToggleCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  compactSwitch: {
+    width: 46,
+    height: 28,
+    borderRadius: 14,
+    padding: 3,
+    backgroundColor: colors.surfaceSoft,
+  },
+  compactSwitchOn: {
+    backgroundColor: colors.green,
+  },
+  compactKnob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.textMuted,
+  },
+  compactKnobOn: {
+    transform: [{ translateX: 18 }],
+    backgroundColor: colors.black,
+  },
+  accountList: {
+    gap: 0,
+  },
+  accountRow: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  accountRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  accountValue: {
+    flex: 1,
+    textAlign: "right",
   },
   searchInput: {
     minHeight: 50,
@@ -839,6 +943,38 @@ function MetricPill({ label }: { label: string }) {
         {label}
       </AppText>
     </View>
+  );
+}
+
+function CompactToggleRow({
+  body,
+  enabled,
+  label,
+  onChange,
+  showDivider,
+}: CompactToggleRowProps) {
+  function toggle() {
+    impactLight();
+    onChange(!enabled);
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked: enabled }}
+      onPress={toggle}
+      style={[styles.compactToggleRow, showDivider ? styles.compactToggleDivider : undefined]}
+    >
+      <View style={styles.compactToggleCopy}>
+        <AppText variant="small">{label}</AppText>
+        <AppText variant="tiny" muted>
+          {body}
+        </AppText>
+      </View>
+      <View style={[styles.compactSwitch, enabled ? styles.compactSwitchOn : undefined]}>
+        <View style={[styles.compactKnob, enabled ? styles.compactKnobOn : undefined]} />
+      </View>
+    </Pressable>
   );
 }
 

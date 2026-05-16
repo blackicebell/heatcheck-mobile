@@ -67,11 +67,6 @@ export function ProfileScreen() {
     [audiusConnection, spotifyConnection, syncStatuses, youtubeConnection],
   );
   const syncedCount = Object.values(syncStatuses).filter((status) => status?.state === "success").length;
-  const accountItems = [
-    { label: "Account status", value: "Standard" },
-    { label: "Sign-in email", value: artistIdentity.email },
-    { label: "Sign-in method", value: artistIdentity.provider },
-  ];
 
   const loadProfileSignals = useCallback(async () => {
     const [savedAudiusConnection, savedSpotifyConnection, savedSyncStatuses, savedYouTubeConnection] =
@@ -159,20 +154,6 @@ export function ProfileScreen() {
       ) : (
         <EmptyState icon="link" {...emptyStates.connectedAccounts} />
       )}
-
-      <SectionHeader title="Account" />
-      <StaggeredList
-        data={accountItems}
-        keyExtractor={(setting) => setting.label}
-        renderItem={(setting) => (
-          <Card>
-            <View style={styles.accountRow}>
-              <AppText variant="h3">{setting.label}</AppText>
-              <AppText muted>{setting.value}</AppText>
-            </View>
-          </Card>
-        )}
-      />
     </ScreenContainer>
   );
 }
@@ -235,9 +216,6 @@ const styles = StyleSheet.create({
   },
   copy: {
     flex: 1,
-    gap: spacing.xs,
-  },
-  accountRow: {
     gap: spacing.xs,
   },
 });
