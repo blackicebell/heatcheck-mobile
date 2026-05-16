@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AudienceScreen } from "@/screens/AudienceScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
@@ -28,6 +29,9 @@ function getTabIconName(routeName: keyof AppTabParamList, focused: boolean) {
 }
 
 export function AppTabs() {
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Math.max(insets.bottom, 12) + 10;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,20 +41,30 @@ export function AppTabs() {
         tabBarInactiveTintColor: colors.textSubtle,
         tabBarStyle: {
           position: "absolute",
-          height: 72,
-          paddingTop: 7,
-          paddingBottom: 10,
-          paddingHorizontal: 8,
-          marginHorizontal: 14,
-          marginBottom: 34,
-          borderRadius: 26,
-          backgroundColor: "rgba(17,19,24,0.96)",
-          borderColor: colors.border,
+          left: 14,
+          right: 14,
+          bottom: bottomOffset,
+          height: 84,
+          paddingTop: 10,
+          paddingBottom: 12,
+          paddingHorizontal: 10,
+          borderRadius: 30,
+          backgroundColor: "rgba(17,19,24,0.92)",
+          borderColor: "rgba(255,255,255,0.12)",
           borderWidth: 1,
+          shadowColor: colors.black,
+          shadowOffset: { width: 0, height: 18 },
+          shadowOpacity: 0.32,
+          shadowRadius: 24,
+          elevation: 14,
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "700",
+          marginTop: 1,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 4,
         },
         tabBarIcon: ({ color, focused }) => (
           <Ionicons

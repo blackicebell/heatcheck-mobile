@@ -6,7 +6,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, layout, spacing } from "@/theme";
 import { getResponsiveHorizontalPadding } from "@/utils/responsive";
@@ -25,19 +25,33 @@ export function ScreenContainer({
   scroll = true,
 }: ScreenContainerProps) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const horizontalPadding = getResponsiveHorizontalPadding(width);
   const content = (
-    <View style={[styles.content, { paddingHorizontal: horizontalPadding }]}>
+    <View
+      style={[
+        styles.content,
+        {
+          paddingHorizontal: horizontalPadding,
+          paddingLeft: horizontalPadding + insets.left,
+          paddingRight: horizontalPadding + insets.right,
+        },
+      ]}
+    >
       <View style={styles.inner}>{children}</View>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom", "left", "right"]}>
+    <View style={[styles.safeArea, { paddingTop: insets.top }]}>
       {scroll ? (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: getBottomContentPadding(insets.bottom) },
+          ]}
+          contentInsetAdjustmentBehavior="automatic"
           refreshControl={
             onRefresh ? (
               <RefreshControl
@@ -53,9 +67,11 @@ export function ScreenContainer({
           {content}
         </ScrollView>
       ) : (
-        content
+        <View style={{ flex: 1, paddingBottom: getBottomContentPadding(insets.bottom) }}>
+          {content}
+        </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -66,7 +82,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 148,
   },
   content: {
     flex: 1,
@@ -82,3 +97,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
 });
+
+function getBottomContentPadding(bottomInset: number) {
+  return 138 + Math.max(bottomInset, 12);
+}
