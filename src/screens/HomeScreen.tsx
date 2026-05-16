@@ -1,6 +1,6 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import {
@@ -28,6 +28,12 @@ import {
 } from "@/data/mockData";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import { useMockRefresh } from "@/hooks/useMockRefresh";
+import {
+  AudiusConnection,
+  AudiusTrack,
+  getAudiusConnection,
+  getAudiusTracksByHandle,
+} from "@/services/audius";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight } from "@/utils/haptics";
@@ -35,12 +41,43 @@ import { impactLight } from "@/utils/haptics";
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const artistIdentity = useArtistIdentity();
+  const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
+  const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const { refresh, refreshing } = useMockRefresh(900);
+  const topAudiusTrack = audiusTracks[0];
+
+  const loadAudiusSignal = useCallback(async () => {
+    const connection = await getAudiusConnection();
+    setAudiusConnection(connection);
+
+    if (!connection) {
+      setAudiusTracks([]);
+      return;
+    }
+
+    try {
+      const tracks = await getAudiusTracksByHandle(connection.handle);
+      setAudiusTracks(tracks);
+    } catch {
+      setAudiusTracks([]);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAudiusSignal();
+    }, [loadAudiusSignal]),
+  );
 
   function openAlert() {
     impactLight();
     setAlertOpen(true);
+  }
+
+  function refreshHome() {
+    refresh();
+    loadAudiusSignal();
   }
 
   if (dashboard.isLoading) {
@@ -53,7 +90,7 @@ export function HomeScreen() {
   }
 
   return (
-    <ScreenContainer onRefresh={refresh} refreshing={refreshing}>
+    <ScreenContainer onRefresh={refreshHome} refreshing={refreshing}>
       <NavigationHeader
         label={`${artistIdentity.handle} / getting heat this week`}
         badge
@@ -115,6 +152,42 @@ export function HomeScreen() {
           </AppText>
         ))}
       </Card>
+      {audiusConnection ? (
+        <AnimatedView delay={160}>
+          <Card elevated>
+            <View style={styles.signalHeader}>
+              <View style={styles.signalIcon}>
+                <AppText variant="h3" style={styles.signalIconText}>
+                  A
+                </AppText>
+              </View>
+              <View style={styles.pressableCopy}>
+                <AppText variant="h3">Audius signal</AppText>
+                <AppText muted>@{audiusConnection.handle}</AppText>
+              </View>
+            </View>
+            {topAudiusTrack ? (
+              <>
+                <AppText>
+                  {topAudiusTrack.title} is your top public Audius track right now.
+                </AppText>
+                <View style={styles.signalMetrics}>
+                  <SignalMetric label="Plays" value={formatCompactNumber(topAudiusTrack.play_count)} />
+                  <SignalMetric label="Favorites" value={formatCompactNumber(topAudiusTrack.favorite_count)} />
+                  <SignalMetric label="Reposts" value={formatCompactNumber(topAudiusTrack.repost_count)} />
+                </View>
+                <AppText muted>
+                  Early favorites and reposts are giving HeatRadar a first real traction read.
+                </AppText>
+              </>
+            ) : (
+              <AppText muted>
+                Audius is connected. HeatRadar will surface track movement here once public tracks come back.
+              </AppText>
+            )}
+          </Card>
+        </AnimatedView>
+      ) : null}
       <SectionHeader title="Since your last alert" />
       <View style={styles.stats}>
         {retentionHighlights.map((item, index) => (
@@ -207,4 +280,49 @@ const styles = StyleSheet.create({
     flexBasis: "48%",
     flexGrow: 1,
   },
+  signalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  signalIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.green,
+  },
+  signalIconText: {
+    color: colors.black,
+  },
+  signalMetrics: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  signalMetric: {
+    flex: 1,
+    gap: spacing.xs,
+    padding: spacing.sm,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceSoft,
+  },
 });
+
+function SignalMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.signalMetric}>
+      <AppText variant="tiny" muted>
+        {label}
+      </AppText>
+      <AppText variant="h3">{value}</AppText>
+    </View>
+  );
+}
+
+function formatCompactNumber(value: number) {
+  return Intl.NumberFormat("en", {
+    maximumFractionDigits: 1,
+    notation: "compact",
+  }).format(value);
+}
