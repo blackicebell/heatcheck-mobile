@@ -152,7 +152,10 @@ export function HomeScreen() {
         <Image source={heatRadarIcon} style={styles.brandIcon} />
         <View style={styles.copy}>
           <AppText variant="h3">{"Today's heat read"}</AppText>
-          <AppText muted>Fresh signal context from your connected platforms.</AppText>
+          <AppText muted>
+            Your audience is warmer today. YouTube engagement and Spotify saves are
+            carrying most of the lift.
+          </AppText>
         </View>
       </View>
       <SectionHeader title={heatScoreRead.headline} />
