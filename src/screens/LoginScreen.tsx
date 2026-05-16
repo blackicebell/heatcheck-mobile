@@ -69,6 +69,7 @@ export function LoginScreen({ navigation }: Props) {
         isCreatingAccount
           ? createUserWithEmailAndPassword(auth, emailValue, password)
           : signInWithEmailAndPassword(auth, emailValue, password),
+        "auth-timeout",
       );
 
       notifySuccess();
@@ -94,7 +95,7 @@ export function LoginScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      await withTimeout(sendPasswordResetEmail(auth, emailValue));
+      await withTimeout(sendPasswordResetEmail(auth, emailValue), "reset-timeout");
       setResetMessage("Password reset link sent. Check your inbox.");
     } catch (authError) {
       setError(getAuthMessage(authError));
@@ -128,7 +129,7 @@ export function LoginScreen({ navigation }: Props) {
       }
 
       const credential = GoogleAuthProvider.credential(idToken);
-      const result = await withTimeout(signInWithCredential(auth, credential));
+      const result = await withTimeout(signInWithCredential(auth, credential), "auth-timeout");
 
       notifySuccess();
       navigation.replace((await needsArtistSetup(result.user.uid)) ? "ArtistSetup" : "AppTabs");
@@ -443,27 +444,35 @@ function getPasswordIssues(password: string) {
   return passwordRules.filter((rule) => !rule.test(password));
 }
 
-function withTimeout<T>(promise: Promise<T>) {
+function withTimeout<T>(promise: Promise<T>, timeoutCode = "request-timeout") {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) => {
       setTimeout(() => {
-        reject(new Error("auth-timeout"));
-      }, 12000);
+        reject(new Error(timeoutCode));
+      }, 25000);
     }),
   ]);
 }
 
 async function needsArtistSetup(userId: string) {
-  const snapshot = await withTimeout(getDoc(doc(db, "users", userId)));
-  const artistName = snapshot.exists() ? snapshot.data().artistName : undefined;
+  try {
+    const snapshot = await withTimeout(getDoc(doc(db, "users", userId)), "profile-timeout");
+    const artistName = snapshot.exists() ? snapshot.data().artistName : undefined;
 
-  return typeof artistName !== "string" || artistName.trim().length < 2;
+    return typeof artistName !== "string" || artistName.trim().length < 2;
+  } catch {
+    return true;
+  }
 }
 
 function getAuthMessage(error: unknown) {
   if (error instanceof Error && error.message === "auth-timeout") {
-    return "Firebase is taking too long to respond. Check that Email/Password sign-in is enabled, then try again.";
+    return "Firebase is taking longer than expected to sign you in. Check your connection and try again.";
+  }
+
+  if (error instanceof Error && error.message === "reset-timeout") {
+    return "Password reset is taking longer than expected. Check your connection and try again.";
   }
 
   if (error instanceof Error && error.message === "missing-google-token") {
