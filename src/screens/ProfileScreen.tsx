@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import {
@@ -14,20 +15,73 @@ import {
   StaggeredList,
 } from "@/components";
 import {
-  dashboard,
   emptyStates,
-  platformConnections,
   settings,
 } from "@/data/mockData";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
+import {
+  AudiusConnection,
+  AudiusTrack,
+  getAudiusConnection,
+  getAudiusTracksByHandle,
+} from "@/services/audius";
+import { calculateHeatScore } from "@/services/heatScore";
+import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
+import {
+  PlatformId,
+  PlatformSyncStatus,
+  getPlatformSyncStatuses,
+} from "@/services/syncStatus";
+import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 
 export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const artistIdentity = useArtistIdentity();
-  const connectedAccounts = platformConnections.filter(
-    (platform) => platform.status === "Connected",
+  const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
+  const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
+  const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
+  const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
+  const connectedAccounts = useMemo(
+    () =>
+      [
+        audiusConnection
+          ? {
+              detail: `@${audiusConnection.handle}`,
+              id: "audius" as const,
+              name: "Audius",
+              syncStatus: syncStatuses.audius,
+            }
+          : null,
+        youtubeConnection
+          ? {
+              detail: youtubeConnection.customUrl ?? youtubeConnection.title,
+              id: "youtube" as const,
+              name: "YouTube",
+              syncStatus: syncStatuses.youtube,
+            }
+          : null,
+        spotifyConnection
+          ? {
+              detail: spotifyConnection.displayName,
+              id: "spotify" as const,
+              name: "Spotify",
+              syncStatus: syncStatuses.spotify,
+            }
+          : null,
+      ].filter((account) => account !== null),
+    [audiusConnection, spotifyConnection, syncStatuses, youtubeConnection],
+  );
+  const heatScoreRead = useMemo(
+    () =>
+      calculateHeatScore({
+        audiusTracks,
+        spotifyConnection,
+        youtubeConnection,
+      }),
+    [audiusTracks, spotifyConnection, youtubeConnection],
   );
   const enabledNotifications = settings.filter((setting) => setting.enabled);
   const accountItems = [
@@ -35,8 +89,40 @@ export function ProfileScreen() {
     { label: "Artist profile", value: artistIdentity.name },
     { label: "Sign-in email", value: artistIdentity.email },
     { label: "Sign-in method", value: artistIdentity.provider },
-    { label: "Data mode", value: "Mock insights" },
+    { label: "Connected signals", value: `${connectedAccounts.length}/3` },
   ];
+
+  const loadProfileSignals = useCallback(async () => {
+    const [savedAudiusConnection, savedSpotifyConnection, savedSyncStatuses, savedYouTubeConnection] =
+      await Promise.all([
+        getAudiusConnection(),
+        getSpotifyConnection(),
+        getPlatformSyncStatuses(),
+        getYouTubeConnection(),
+      ]);
+
+    setAudiusConnection(savedAudiusConnection);
+    setSpotifyConnection(savedSpotifyConnection);
+    setSyncStatuses(savedSyncStatuses);
+    setYouTubeConnection(savedYouTubeConnection);
+
+    if (!savedAudiusConnection) {
+      setAudiusTracks([]);
+      return;
+    }
+
+    try {
+      setAudiusTracks(await getAudiusTracksByHandle(savedAudiusConnection.handle));
+    } catch {
+      setAudiusTracks([]);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileSignals();
+    }, [loadProfileSignals]),
+  );
 
   return (
     <ScreenContainer>
@@ -61,16 +147,16 @@ export function ProfileScreen() {
             <AppText variant="tiny" muted>
               Heat Score
             </AppText>
-            <AppText variant="title">{dashboard.heatScore}</AppText>
+            <AppText variant="title">{heatScoreRead.score}</AppText>
           </View>
           <View style={styles.heatPill}>
             <AppText variant="small" style={styles.heatPillText}>
-              {dashboard.weeklyChange}
+              {heatScoreRead.weeklyChange}
             </AppText>
           </View>
         </View>
-        <AppText>{dashboard.scoreExplanation}</AppText>
-        <AppText muted>{dashboard.scoreBoost}</AppText>
+        <AppText>{heatScoreRead.explanation}</AppText>
+        <AppText muted>{heatScoreRead.scoreBoost}</AppText>
       </Card>
 
       <SectionHeader title="Connected accounts" />
@@ -85,6 +171,9 @@ export function ProfileScreen() {
                 <View style={styles.copy}>
                   <AppText variant="h3">{account.name}</AppText>
                   <AppText muted>{account.detail}</AppText>
+                  <AppText variant="tiny" muted>
+                    {formatSyncStatus(account.syncStatus)}
+                  </AppText>
                 </View>
               </View>
             </Card>
@@ -182,3 +271,44 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
 });
+
+function formatSyncStatus(status?: PlatformSyncStatus) {
+  if (!status) {
+    return "Not synced yet";
+  }
+
+  if (status.state === "failed") {
+    return status.message;
+  }
+
+  return `${status.message} ${formatRelativeTime(status.checkedAt)}`;
+}
+
+function formatRelativeTime(dateString: string) {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return "recently";
+  }
+
+  const differenceInMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+
+  if (differenceInMinutes < 1) {
+    return "just now";
+  }
+
+  if (differenceInMinutes < 60) {
+    return `${differenceInMinutes}m ago`;
+  }
+
+  const differenceInHours = Math.round(differenceInMinutes / 60);
+
+  if (differenceInHours < 24) {
+    return `${differenceInHours}h ago`;
+  }
+
+  return date.toLocaleDateString("en", {
+    day: "numeric",
+    month: "short",
+  });
+}
