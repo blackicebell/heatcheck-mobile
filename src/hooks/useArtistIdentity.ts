@@ -6,9 +6,11 @@ import { auth } from "@/services/firebase";
 
 type ArtistIdentity = {
   city: string;
+  email: string;
   handle: string;
   initials: string;
   name: string;
+  provider: string;
 };
 
 export function useArtistIdentity() {
@@ -46,10 +48,26 @@ function buildArtistIdentity(name?: string | null): ArtistIdentity {
 
   return {
     city: mockArtist.city,
+    email: auth.currentUser?.email ?? "No email saved",
     handle: toHandle(artistName),
     initials: toInitials(artistName),
     name: artistName,
+    provider: getProviderLabel(),
   };
+}
+
+function getProviderLabel() {
+  const providerId = auth.currentUser?.providerData[0]?.providerId;
+
+  if (providerId === "google.com") {
+    return "Google";
+  }
+
+  if (providerId === "password") {
+    return "Email";
+  }
+
+  return "Firebase";
 }
 
 function toHandle(name: string) {

@@ -17,6 +17,7 @@ import {
   ToggleRow,
 } from "@/components";
 import { platformConnections, settings } from "@/data/mockData";
+import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import { clearLocalArtistProfile } from "@/services/artistProfile";
 import { auth } from "@/services/firebase";
 import { colors, spacing } from "@/theme";
@@ -27,6 +28,7 @@ type ConnectionStatus = PlatformConnection["status"];
 
 export function SettingsScreen() {
   const navigation = useNavigation();
+  const artistIdentity = useArtistIdentity();
   const [connectionModal, setConnectionModal] = useState<PlatformConnection | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [connections, setConnections] = useState(platformConnections);
@@ -172,8 +174,11 @@ export function SettingsScreen() {
       <Card>
         <View style={styles.sessionCard}>
           <View style={styles.copy}>
-            <AppText variant="h3">Signed in</AppText>
+            <AppText variant="h3">Signed in as {artistIdentity.name}</AppText>
             <AppText muted>
+              {artistIdentity.email} / {artistIdentity.provider}
+            </AppText>
+            <AppText variant="small" muted>
               Sign out when you want to test another account or reset the login flow.
             </AppText>
           </View>

@@ -14,7 +14,6 @@ import {
   StaggeredList,
 } from "@/components";
 import {
-  accountSettings,
   dashboard,
   emptyStates,
   platformConnections,
@@ -31,6 +30,13 @@ export function ProfileScreen() {
     (platform) => platform.status === "Connected",
   );
   const enabledNotifications = settings.filter((setting) => setting.enabled);
+  const accountItems = [
+    { label: "Plan", value: "HeatRadar Pro preview" },
+    { label: "Artist profile", value: artistIdentity.name },
+    { label: "Sign-in email", value: artistIdentity.email },
+    { label: "Sign-in method", value: artistIdentity.provider },
+    { label: "Data mode", value: "Mock insights" },
+  ];
 
   return (
     <ScreenContainer>
@@ -112,7 +118,7 @@ export function ProfileScreen() {
         onPress={() => navigation.navigate("TrialPaywall")}
       />
       <StaggeredList
-        data={accountSettings}
+        data={accountItems}
         keyExtractor={(setting) => setting.label}
         renderItem={(setting) => (
           <Card>
