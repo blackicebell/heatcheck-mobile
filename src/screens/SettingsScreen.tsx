@@ -421,7 +421,7 @@ export function SettingsScreen() {
 
   return (
     <ScreenContainer>
-      <NavigationHeader label="Signal settings" actionIcon="shield-checkmark" />
+      <NavigationHeader label="Signal settings" />
       <SectionHeader
         title="Settings."
         body="Keep HeatRadar focused on the signals that tell you when listener movement is picking up."
