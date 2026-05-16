@@ -148,14 +148,41 @@ export function HomeScreen() {
           navigation.navigate("Notifications");
         }}
       />
-      <View style={styles.brandStrip}>
-        <Image source={heatRadarIcon} style={styles.brandIcon} />
-        <View style={styles.copy}>
-          <AppText variant="h3">{"Today's heat read"}</AppText>
-          <AppText muted>
-            Your audience is warmer today. YouTube engagement and Spotify saves are
-            carrying most of the lift.
-          </AppText>
+      <View style={styles.heatReadCard}>
+        <View style={styles.heatReadAccent} />
+        <View style={styles.heatReadTop}>
+          <View style={styles.heatIconFrame}>
+            <Image source={heatRadarIcon} style={styles.heatIcon} />
+          </View>
+          <View style={styles.heatReadCopy}>
+            <View style={styles.heatReadPill}>
+              <AppText variant="tiny" style={styles.heatReadPillText}>
+                {"TODAY'S HEAT READ"}
+              </AppText>
+            </View>
+            <AppText variant="h2">Audience is warming up</AppText>
+          </View>
+        </View>
+        <AppText style={styles.heatReadBody}>
+          YouTube engagement and Spotify saves are carrying most of the lift today.
+        </AppText>
+        <View style={styles.heatReadSignals}>
+          <View style={styles.heatSignalChip}>
+            <AppText variant="tiny" muted>
+              YOUTUBE
+            </AppText>
+            <AppText variant="small" style={styles.heatSignalValue}>
+              Engagement up
+            </AppText>
+          </View>
+          <View style={styles.heatSignalChip}>
+            <AppText variant="tiny" muted>
+              SPOTIFY
+            </AppText>
+            <AppText variant="small" style={styles.heatSignalValue}>
+              Saves lifting
+            </AppText>
+          </View>
         </View>
       </View>
       <SectionHeader title={heatScoreRead.headline} />
@@ -405,20 +432,85 @@ const styles = StyleSheet.create({
   pillText: {
     color: colors.green,
   },
-  brandStrip: {
+  heatReadCard: {
+    position: "relative",
+    overflow: "hidden",
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: 28,
+    backgroundColor: "#17110E",
+    borderWidth: 1,
+    borderColor: "rgba(255,207,95,0.26)",
+    shadowColor: "#FF7A1A",
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.2,
+    shadowRadius: 28,
+    elevation: 8,
+  },
+  heatReadAccent: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 5,
+    backgroundColor: "#FF7A1A",
+  },
+  heatReadTop: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,107,107,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,207,95,0.18)",
   },
-  brandIcon: {
-    width: 52,
-    height: 52,
+  heatIconFrame: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  heatIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
+  },
+  heatReadCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  heatReadPill: {
+    alignSelf: "flex-start",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(68,240,138,0.14)",
+  },
+  heatReadPillText: {
+    color: colors.green,
+    fontWeight: "900",
+  },
+  heatReadBody: {
+    color: colors.text,
+    fontSize: 16,
+    lineHeight: 23,
+  },
+  heatReadSignals: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  heatSignalChip: {
+    flex: 1,
+    gap: spacing.xs,
+    padding: spacing.sm,
     borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  heatSignalValue: {
+    color: colors.white,
+    fontWeight: "800",
   },
   stats: {
     flexDirection: "row",
