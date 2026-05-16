@@ -22,18 +22,14 @@ import { AnimatedView, AppText, Button, ScreenContainer, SectionHeader } from "@
 import googleLogo from "@/assets/brand/google-g.png";
 import { needsArtistSetup } from "@/services/artistProfile";
 import { auth } from "@/services/firebase";
+import { configureGoogleSignin } from "@/services/google";
 import { colors, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
-const googleWebClientId =
-  "717353489884-58ran11gduia9jo59gbj0uunkjhaj3e4.apps.googleusercontent.com";
-
-GoogleSignin.configure({
-  webClientId: googleWebClientId,
-});
+configureGoogleSignin();
 
 export function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);

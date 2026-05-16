@@ -29,6 +29,11 @@ import {
 } from "@/services/audius";
 import { clearLocalArtistProfile } from "@/services/artistProfile";
 import { auth } from "@/services/firebase";
+import {
+  YouTubeConnection,
+  connectYouTubeChannel,
+  getYouTubeConnection,
+} from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
@@ -48,6 +53,8 @@ export function SettingsScreen() {
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [searchingAudius, setSearchingAudius] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
+  const [youtubeError, setYouTubeError] = useState("");
   const [toggleStates, setToggleStates] = useState(() =>
     Object.fromEntries(settings.map((item) => [item.label, item.enabled])),
   );
@@ -55,19 +62,29 @@ export function SettingsScreen() {
   useEffect(() => {
     let active = true;
 
-    async function loadAudiusConnection() {
-      const savedConnection = await getAudiusConnection();
+    async function loadConnections() {
+      const [savedAudiusConnection, savedYouTubeConnection] = await Promise.all([
+        getAudiusConnection(),
+        getYouTubeConnection(),
+      ]);
 
-      if (!active || !savedConnection) {
+      if (!active) {
         return;
       }
 
-      setAudiusConnection(savedConnection);
-      markAudiusConnected(savedConnection);
-      loadAudiusTracks(savedConnection.handle);
+      if (savedAudiusConnection) {
+        setAudiusConnection(savedAudiusConnection);
+        markAudiusConnected(savedAudiusConnection);
+        loadAudiusTracks(savedAudiusConnection.handle);
+      }
+
+      if (savedYouTubeConnection) {
+        setYouTubeConnection(savedYouTubeConnection);
+        markYouTubeConnected(savedYouTubeConnection);
+      }
     }
 
-    loadAudiusConnection();
+    loadConnections();
 
     return () => {
       active = false;
@@ -80,6 +97,16 @@ export function SettingsScreen() {
 
       if (audiusConnection) {
         loadAudiusTracks(audiusConnection.handle);
+      }
+
+      return;
+    }
+
+    if (platform.id === "youtube") {
+      setConnectionModal(platform);
+
+      if (!youtubeConnection) {
+        connectYouTube();
       }
 
       return;
@@ -158,6 +185,41 @@ export function SettingsScreen() {
           ? {
               ...item,
               detail: `@${connection.handle}`,
+              status: "Connected",
+            }
+          : item,
+      ),
+    );
+  }
+
+  async function connectYouTube() {
+    if (connectingId === "youtube") {
+      return;
+    }
+
+    impactLight();
+    setYouTubeError("");
+    setConnectingId("youtube");
+
+    try {
+      const savedConnection = await connectYouTubeChannel();
+      setYouTubeConnection(savedConnection);
+      markYouTubeConnected(savedConnection);
+      notifySuccess();
+    } catch (error) {
+      setYouTubeError(getYouTubeErrorMessage(error));
+    } finally {
+      setConnectingId(null);
+    }
+  }
+
+  function markYouTubeConnected(connection: YouTubeConnection) {
+    setConnections((items) =>
+      items.map((item) =>
+        item.id === "youtube"
+          ? {
+              ...item,
+              detail: connection.customUrl ?? connection.title,
               status: "Connected",
             }
           : item,
@@ -316,6 +378,13 @@ export function SettingsScreen() {
               setQuery={setAudiusQuery}
               tracks={audiusTracks}
             />
+          ) : connectionModal.id === "youtube" ? (
+            <YouTubeConnectionContent
+              connection={youtubeConnection}
+              error={youtubeError}
+              loading={connectingId === "youtube"}
+              onConnect={connectYouTube}
+            />
           ) : (
             <>
               <AppText variant="h2">
@@ -421,6 +490,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  youtubeMetricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
   },
 });
 
@@ -547,6 +621,68 @@ function formatCompactNumber(value: number) {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
+}
+
+type YouTubeConnectionContentProps = {
+  connection: YouTubeConnection | null;
+  error: string;
+  loading: boolean;
+  onConnect: () => void;
+};
+
+function YouTubeConnectionContent({
+  connection,
+  error,
+  loading,
+  onConnect,
+}: YouTubeConnectionContentProps) {
+  if (connection) {
+    return (
+      <>
+        <AppText variant="h2">YouTube is connected</AppText>
+        <AppText muted>
+          {connection.title} is now connected with read-only channel access.
+        </AppText>
+        <View style={styles.youtubeMetricGrid}>
+          <MetricPill label={`${formatCompactNumber(connection.viewCount)} views`} />
+          <MetricPill label={`${formatCompactNumber(connection.subscriberCount)} subscribers`} />
+          <MetricPill label={`${formatCompactNumber(connection.videoCount)} videos`} />
+        </View>
+        <AppText muted>
+          Next we can turn uploads, views, and subscriber movement into HeatRadar signals.
+        </AppText>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <AppText variant="h2">Connect YouTube</AppText>
+      <AppText muted>
+        HeatRadar asks for read-only YouTube access so it can read channel and video movement. It will not upload, edit, or delete anything.
+      </AppText>
+      <Button loading={loading} onPress={onConnect}>
+        Continue with Google
+      </Button>
+      {error ? (
+        <AppText variant="small" style={styles.failed}>
+          {error}
+        </AppText>
+      ) : null}
+    </>
+  );
+}
+
+function getYouTubeErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message === "youtube-cancelled") {
+    return "YouTube connection was cancelled. You can try again anytime.";
+  }
+
+  if (error instanceof Error && error.message === "youtube-channel-not-found") {
+    return "No YouTube channel was found for that Google account.";
+  }
+
+  return "YouTube did not connect yet. Make sure the YouTube Data API is enabled for this Google project, then try again.";
 }
 
 function getConnectionStyle(status: ConnectionStatus) {

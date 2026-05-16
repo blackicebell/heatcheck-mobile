@@ -7,8 +7,8 @@ No real music-platform APIs are currently integrated. Account access uses Fireba
 HeatRadar should prioritize platforms that feel native to independent artists and early audience movement:
 
 1. Audius
-2. SoundCloud
-3. YouTube
+2. YouTube
+3. SoundCloud
 4. Spotify
 
 Shazam is intentionally out of scope. It points the product toward recognition tech instead of artist growth tracking.
@@ -45,7 +45,38 @@ Implementation notes:
 - keep API keys off the client once a backend exists
 - normalize Audius data before it reaches screens
 
-## Phase 1: SoundCloud
+## Phase 2: YouTube
+
+Why next:
+
+- strong signal for music videos, shorts, visualizers, and performance clips
+- useful engagement data for artists who promote through video
+- HeatRadar already uses Google sign-in, so read-only YouTube authorization is the cleanest next permission step
+
+Goals:
+
+- connect Google/YouTube account
+- read channel and video performance
+- detect engagement spikes around uploads
+- support release/video traction
+
+Potential data:
+
+- views
+- likes
+- comments
+- subscribers
+- upload dates
+- retention/watch-time where available through approved scopes
+
+OAuth:
+
+- Google OAuth required
+- use minimal scopes and clear permission copy
+- first pass can use `https://www.googleapis.com/auth/youtube.readonly`
+- production version should move token storage and refresh handling to the backend
+
+## Paused: SoundCloud
 
 Why early:
 
@@ -80,34 +111,6 @@ OAuth:
 - refresh tokens are single-use and should be rotated server-side
 - backend should store encrypted refresh tokens
 
-## Phase 2: YouTube
-
-Why next:
-
-- strong signal for music videos, shorts, visualizers, and performance clips
-- useful engagement data for artists who promote through video
-
-Goals:
-
-- connect Google/YouTube account
-- read channel and video performance
-- detect engagement spikes around uploads
-- support release/video traction
-
-Potential data:
-
-- views
-- likes
-- comments
-- subscribers
-- upload dates
-- retention/watch-time where available through approved scopes
-
-OAuth:
-
-- Google OAuth required
-- use minimal scopes and clear permission copy
-
 ## Phase 3: Spotify
 
 Why later:
@@ -140,9 +143,9 @@ Risks:
 2. Artist profile persistence
 3. Provider connection records
 4. Audius read-only proof of concept
-5. SoundCloud read-only proof of concept
+5. YouTube read-only channel proof of concept
 6. Heat Score input snapshots
-7. YouTube connection and video metrics
+7. YouTube video metrics
 8. Spotify catalog/context connection
 9. Notification settings and in-app notification records
 10. Subscription entitlement state
