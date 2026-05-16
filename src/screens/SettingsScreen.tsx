@@ -277,6 +277,22 @@ export function SettingsScreen() {
     notifySuccess();
   }
 
+  function getQuickDisconnectAction(platformId: string) {
+    if (platformId === "audius" && audiusConnection) {
+      return disconnectAudius;
+    }
+
+    if (platformId === "youtube" && youtubeConnection) {
+      return disconnectYouTube;
+    }
+
+    if (platformId === "spotify" && spotifyConnection) {
+      return disconnectSpotify;
+    }
+
+    return null;
+  }
+
   async function connectYouTube({ forceAccountSelection = false } = {}) {
     if (connectingId === "youtube") {
       return;
@@ -492,6 +508,7 @@ export function SettingsScreen() {
           const connected = platform.status === "Connected";
           const failed = platform.status === "Failed";
           const reconnect = platform.status === "Reconnect";
+          const quickDisconnect = getQuickDisconnectAction(platform.id);
 
           return (
             <Pressable
@@ -527,22 +544,38 @@ export function SettingsScreen() {
                       {platform.permission}
                     </AppText>
                   </View>
-                  {isConnecting ? (
-                    <ActivityIndicator color={colors.green} />
-                  ) : (
-                    <AppText
-                      variant="small"
-                      style={getConnectionStyle(platform.status)}
-                    >
-                      {connected
-                        ? "Connected"
-                        : failed
-                          ? "Retry"
-                          : reconnect
-                            ? "Reconnect"
-                            : "Connect"}
-                    </AppText>
-                  )}
+                  <View style={styles.connectionActions}>
+                    {isConnecting ? (
+                      <ActivityIndicator color={colors.green} />
+                    ) : (
+                      <AppText
+                        variant="small"
+                        style={getConnectionStyle(platform.status)}
+                      >
+                        {connected
+                          ? "Connected"
+                          : failed
+                            ? "Retry"
+                            : reconnect
+                              ? "Reconnect"
+                              : "Connect"}
+                      </AppText>
+                    )}
+                    {quickDisconnect ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          quickDisconnect();
+                        }}
+                        style={({ pressed }) => [styles.quickDisconnect, pressed ? styles.pressed : undefined]}
+                      >
+                        <AppText variant="tiny" style={styles.quickDisconnectText}>
+                          Disconnect
+                        </AppText>
+                      </Pressable>
+                    ) : null}
+                  </View>
                 </View>
               </Card>
             </Pressable>
@@ -717,6 +750,22 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.82,
     transform: [{ scale: 0.99 }],
+  },
+  connectionActions: {
+    alignItems: "flex-end",
+    gap: spacing.xs,
+  },
+  quickDisconnect: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,107,107,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,107,0.22)",
+  },
+  quickDisconnectText: {
+    color: colors.red,
+    fontWeight: "900",
   },
   sessionCard: {
     gap: spacing.md,
