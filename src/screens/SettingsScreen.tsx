@@ -37,6 +37,14 @@ import {
   getSpotifyConnection,
 } from "@/services/spotify";
 import {
+  PlatformId,
+  PlatformSyncStatus,
+  clearPlatformSyncStatus,
+  getPlatformSyncStatuses,
+  markPlatformSyncFailed,
+  markPlatformSyncSuccess,
+} from "@/services/syncStatus";
+import {
   YouTubeConnection,
   clearYouTubeConnection,
   connectYouTubeChannel,
@@ -63,6 +71,7 @@ export function SettingsScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [spotifyError, setSpotifyError] = useState("");
+  const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const [youtubeError, setYouTubeError] = useState("");
   const [toggleStates, setToggleStates] = useState(() =>
@@ -78,10 +87,13 @@ export function SettingsScreen() {
         getSpotifyConnection(),
         getYouTubeConnection(),
       ]);
+      const savedSyncStatuses = await getPlatformSyncStatuses();
 
       if (!active) {
         return;
       }
+
+      setSyncStatuses(savedSyncStatuses);
 
       if (savedAudiusConnection) {
         setAudiusConnection(savedAudiusConnection);
@@ -187,8 +199,10 @@ export function SettingsScreen() {
       setAudiusConnection(savedConnection);
       markAudiusConnected(savedConnection);
       await loadAudiusTracks(savedConnection.handle);
+      await updateSyncSuccess("audius", "Audius refreshed.");
       notifySuccess();
     } catch {
+      await updateSyncFailed("audius", "Could not save or refresh Audius.");
       setAudiusError("We could not save that Audius profile yet. Try again.");
     } finally {
       setConnectingId(null);
@@ -215,8 +229,10 @@ export function SettingsScreen() {
 
     try {
       await loadAudiusTracks(audiusConnection.handle);
+      await updateSyncSuccess("audius", "Audius refreshed.");
       notifySuccess();
     } catch {
+      await updateSyncFailed("audius", "Could not refresh Audius.");
       setAudiusError("Audius did not refresh yet. Check your connection and try again.");
     } finally {
       setConnectingId(null);
@@ -240,6 +256,7 @@ export function SettingsScreen() {
   async function disconnectAudius() {
     impactLight();
     await clearAudiusConnection();
+    await clearPlatformStatus("audius");
     setAudiusConnection(null);
     setAudiusTracks([]);
     resetPlatformConnection("audius");
@@ -259,8 +276,10 @@ export function SettingsScreen() {
       const savedConnection = await connectYouTubeChannel();
       setYouTubeConnection(savedConnection);
       markYouTubeConnected(savedConnection);
+      await updateSyncSuccess("youtube", "YouTube refreshed.");
       notifySuccess();
     } catch (error) {
+      await updateSyncFailed("youtube", "Could not refresh YouTube.");
       setYouTubeError(getYouTubeErrorMessage(error));
     } finally {
       setConnectingId(null);
@@ -284,6 +303,7 @@ export function SettingsScreen() {
   async function disconnectYouTube() {
     impactLight();
     await clearYouTubeConnection();
+    await clearPlatformStatus("youtube");
     setYouTubeConnection(null);
     setYouTubeError("");
     resetPlatformConnection("youtube");
@@ -303,8 +323,10 @@ export function SettingsScreen() {
       const savedConnection = await connectSpotifyAccount();
       setSpotifyConnection(savedConnection);
       markSpotifyConnected(savedConnection);
+      await updateSyncSuccess("spotify", "Spotify refreshed.");
       notifySuccess();
     } catch (error) {
+      await updateSyncFailed("spotify", "Could not refresh Spotify.");
       setSpotifyError(getSpotifyErrorMessage(error));
     } finally {
       setConnectingId(null);
@@ -328,6 +350,7 @@ export function SettingsScreen() {
   async function disconnectSpotify() {
     impactLight();
     await clearSpotifyConnection();
+    await clearPlatformStatus("spotify");
     setSpotifyConnection(null);
     setSpotifyError("");
     resetPlatformConnection("spotify");
@@ -344,6 +367,21 @@ export function SettingsScreen() {
     setConnections((items) =>
       items.map((item) => (item.id === platformId ? originalPlatform : item)),
     );
+  }
+
+  async function updateSyncSuccess(platformId: PlatformId, message: string) {
+    await markPlatformSyncSuccess(platformId, message);
+    setSyncStatuses(await getPlatformSyncStatuses());
+  }
+
+  async function updateSyncFailed(platformId: PlatformId, message: string) {
+    await markPlatformSyncFailed(platformId, message);
+    setSyncStatuses(await getPlatformSyncStatuses());
+  }
+
+  async function clearPlatformStatus(platformId: PlatformId) {
+    await clearPlatformSyncStatus(platformId);
+    setSyncStatuses(await getPlatformSyncStatuses());
   }
 
   async function handleSignOut() {
@@ -412,6 +450,10 @@ export function SettingsScreen() {
                   <View style={styles.copy}>
                     <AppText variant="h3">{platform.name}</AppText>
                     <AppText muted>{platform.detail}</AppText>
+                    <SyncStatusLine
+                      loading={isConnecting}
+                      status={syncStatuses[platform.id as PlatformId]}
+                    />
                     <AppText variant="tiny" muted>
                       {platform.permission}
                     </AppText>
@@ -497,6 +539,7 @@ export function SettingsScreen() {
               results={audiusResults}
               searching={searchingAudius || connectingId === "audius"}
               setQuery={setAudiusQuery}
+              syncStatus={syncStatuses.audius}
               tracks={audiusTracks}
             />
           ) : connectionModal.id === "youtube" ? (
@@ -507,6 +550,7 @@ export function SettingsScreen() {
               onConnect={connectYouTube}
               onDisconnect={disconnectYouTube}
               onRefresh={connectYouTube}
+              syncStatus={syncStatuses.youtube}
             />
           ) : connectionModal.id === "spotify" ? (
             <SpotifyConnectionContent
@@ -516,6 +560,7 @@ export function SettingsScreen() {
               onConnect={connectSpotify}
               onDisconnect={disconnectSpotify}
               onRefresh={connectSpotify}
+              syncStatus={syncStatuses.spotify}
             />
           ) : (
             <>
@@ -639,6 +684,26 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontWeight: "800",
   },
+  syncLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  syncDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.textSubtle,
+  },
+  syncDotSuccess: {
+    backgroundColor: colors.green,
+  },
+  syncDotFailed: {
+    backgroundColor: colors.red,
+  },
+  syncTextFailed: {
+    color: colors.red,
+  },
 });
 
 type AudiusConnectionContentProps = {
@@ -652,6 +717,7 @@ type AudiusConnectionContentProps = {
   results: AudiusUser[];
   searching: boolean;
   setQuery: (query: string) => void;
+  syncStatus?: PlatformSyncStatus;
   tracks: AudiusTrack[];
 };
 
@@ -666,6 +732,7 @@ function AudiusConnectionContent({
   results,
   searching,
   setQuery,
+  syncStatus,
   tracks,
 }: AudiusConnectionContentProps) {
   if (connection) {
@@ -678,6 +745,7 @@ function AudiusConnectionContent({
         <AppText variant="small" muted>
           Last synced {formatSyncTime(connection.connectedAt)}
         </AppText>
+        <SyncStatusLine loading={searching} status={syncStatus} />
         <View style={styles.actionRow}>
           <Button loading={searching} onPress={onRefresh} style={styles.actionButton}>
             Refresh
@@ -774,6 +842,40 @@ function MetricPill({ label }: { label: string }) {
   );
 }
 
+function SyncStatusLine({
+  loading,
+  status,
+}: {
+  loading?: boolean;
+  status?: PlatformSyncStatus;
+}) {
+  const failed = status?.state === "failed";
+  const message = loading
+    ? "Syncing..."
+    : status
+      ? `${status.message} ${formatRelativeSyncTime(status.checkedAt)}`
+      : "Not synced yet";
+
+  return (
+    <View style={styles.syncLine}>
+      <View
+        style={[
+          styles.syncDot,
+          status?.state === "success" ? styles.syncDotSuccess : undefined,
+          failed ? styles.syncDotFailed : undefined,
+        ]}
+      />
+      <AppText
+        variant="tiny"
+        muted={!failed}
+        style={failed ? styles.syncTextFailed : undefined}
+      >
+        {message}
+      </AppText>
+    </View>
+  );
+}
+
 function formatCompactNumber(value: number) {
   return Intl.NumberFormat("en", {
     maximumFractionDigits: 1,
@@ -788,6 +890,7 @@ type YouTubeConnectionContentProps = {
   onConnect: () => void;
   onDisconnect: () => void;
   onRefresh: () => void;
+  syncStatus?: PlatformSyncStatus;
 };
 
 function YouTubeConnectionContent({
@@ -797,6 +900,7 @@ function YouTubeConnectionContent({
   onConnect,
   onDisconnect,
   onRefresh,
+  syncStatus,
 }: YouTubeConnectionContentProps) {
   if (connection) {
     return (
@@ -808,6 +912,7 @@ function YouTubeConnectionContent({
         <AppText variant="small" muted>
           Last synced {formatSyncTime(connection.connectedAt)}
         </AppText>
+        <SyncStatusLine loading={loading} status={syncStatus} />
         <View style={styles.youtubeMetricGrid}>
           <MetricPill label={`${formatCompactNumber(connection.viewCount)} views`} />
           <MetricPill label={`${formatCompactNumber(connection.subscriberCount)} subscribers`} />
@@ -865,6 +970,7 @@ type SpotifyConnectionContentProps = {
   onConnect: () => void;
   onDisconnect: () => void;
   onRefresh: () => void;
+  syncStatus?: PlatformSyncStatus;
 };
 
 function SpotifyConnectionContent({
@@ -874,6 +980,7 @@ function SpotifyConnectionContent({
   onConnect,
   onDisconnect,
   onRefresh,
+  syncStatus,
 }: SpotifyConnectionContentProps) {
   if (connection) {
     const topTrack = connection.topTracks[0];
@@ -887,6 +994,7 @@ function SpotifyConnectionContent({
         <AppText variant="small" muted>
           Last synced {formatSyncTime(connection.connectedAt)}
         </AppText>
+        <SyncStatusLine loading={loading} status={syncStatus} />
         <View style={styles.youtubeMetricGrid}>
           <MetricPill label={`${formatCompactNumber(connection.followers)} followers`} />
           <MetricPill label={`${connection.topTracks.length} top tracks`} />
@@ -959,6 +1067,35 @@ function formatSyncTime(dateString: string) {
 
   if (Number.isNaN(date.getTime())) {
     return "recently";
+  }
+
+  return date.toLocaleDateString("en", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatRelativeSyncTime(dateString: string) {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const differenceInMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+
+  if (differenceInMinutes < 1) {
+    return "just now";
+  }
+
+  if (differenceInMinutes < 60) {
+    return `${differenceInMinutes}m ago`;
+  }
+
+  const differenceInHours = Math.round(differenceInMinutes / 60);
+
+  if (differenceInHours < 24) {
+    return `${differenceInHours}h ago`;
   }
 
   return date.toLocaleDateString("en", {

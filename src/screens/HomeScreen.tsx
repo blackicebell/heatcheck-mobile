@@ -36,6 +36,13 @@ import {
 } from "@/services/audius";
 import { calculateHeatScore } from "@/services/heatScore";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
+import {
+  PlatformId,
+  PlatformSyncStatus,
+  getPlatformSyncStatuses,
+  markPlatformSyncFailed,
+  markPlatformSyncSuccess,
+} from "@/services/syncStatus";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
@@ -48,6 +55,7 @@ export function HomeScreen() {
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useMockRefresh(900);
   const topAudiusTrack = audiusTracks[0];
@@ -74,8 +82,12 @@ export function HomeScreen() {
     try {
       const tracks = await getAudiusTracksByHandle(connection.handle);
       setAudiusTracks(tracks);
+      await markPlatformSyncSuccess("audius", "Audius checked.");
+      setSyncStatuses(await getPlatformSyncStatuses());
     } catch {
       setAudiusTracks([]);
+      await markPlatformSyncFailed("audius", "Audius could not refresh.");
+      setSyncStatuses(await getPlatformSyncStatuses());
     }
   }, []);
 
@@ -89,12 +101,17 @@ export function HomeScreen() {
     setSpotifyConnection(connection);
   }, []);
 
+  const loadSyncStatuses = useCallback(async () => {
+    setSyncStatuses(await getPlatformSyncStatuses());
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadAudiusSignal();
       loadSpotifySignal();
+      loadSyncStatuses();
       loadYouTubeSignal();
-    }, [loadAudiusSignal, loadSpotifySignal, loadYouTubeSignal]),
+    }, [loadAudiusSignal, loadSpotifySignal, loadSyncStatuses, loadYouTubeSignal]),
   );
 
   function openAlert() {
@@ -106,6 +123,7 @@ export function HomeScreen() {
     refresh();
     loadAudiusSignal();
     loadSpotifySignal();
+    loadSyncStatuses();
     loadYouTubeSignal();
   }
 
@@ -174,12 +192,18 @@ export function HomeScreen() {
         <EmptyState icon="flame" {...emptyStates.traction} />
       )}
       <Card>
-        <AppText variant="h3">Sync check</AppText>
-        {loadingCopy.syncMessages.map((message) => (
-          <AppText key={message} muted>
-            {message}
-          </AppText>
-        ))}
+        <View style={styles.syncHeader}>
+          <View style={styles.copy}>
+            <AppText variant="h3">Sync check</AppText>
+            <AppText muted>{getOverallSyncRead(syncStatuses)}</AppText>
+          </View>
+          {refreshing ? <AppText variant="small" style={styles.pillText}>Syncing...</AppText> : null}
+        </View>
+        <View style={styles.syncList}>
+          <HomeSyncRow label="Audius" status={syncStatuses.audius} />
+          <HomeSyncRow label="YouTube" status={syncStatuses.youtube} />
+          <HomeSyncRow label="Spotify" status={syncStatuses.spotify} />
+        </View>
       </Card>
       {audiusConnection ? (
         <AnimatedView delay={160}>
@@ -489,6 +513,46 @@ const styles = StyleSheet.create({
   signalRead: {
     color: colors.text,
   },
+  copy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  syncHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  syncList: {
+    gap: spacing.sm,
+  },
+  syncRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  syncLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  syncDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.textSubtle,
+  },
+  syncDotSuccess: {
+    backgroundColor: colors.green,
+  },
+  syncDotFailed: {
+    backgroundColor: colors.red,
+  },
+  syncTextFailed: {
+    color: colors.red,
+  },
 });
 
 function SignalMetric({ label, value }: { label: string; value: string }) {
@@ -502,11 +566,91 @@ function SignalMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
+function HomeSyncRow({
+  label,
+  status,
+}: {
+  label: string;
+  status?: PlatformSyncStatus;
+}) {
+  const failed = status?.state === "failed";
+
+  return (
+    <View style={styles.syncRow}>
+      <View style={styles.syncLeft}>
+        <View
+          style={[
+            styles.syncDot,
+            status?.state === "success" ? styles.syncDotSuccess : undefined,
+            failed ? styles.syncDotFailed : undefined,
+          ]}
+        />
+        <AppText variant="small">{label}</AppText>
+      </View>
+      <AppText
+        variant="tiny"
+        muted={!failed}
+        style={failed ? styles.syncTextFailed : undefined}
+      >
+        {status ? formatRelativeSyncTime(status.checkedAt) : "Not connected"}
+      </AppText>
+    </View>
+  );
+}
+
+function getOverallSyncRead(statuses: Partial<Record<PlatformId, PlatformSyncStatus>>) {
+  const connectedStatuses = Object.values(statuses);
+
+  if (connectedStatuses.length === 0) {
+    return "Connect a platform and HeatRadar will show when it last checked for movement.";
+  }
+
+  if (connectedStatuses.some((status) => status.state === "failed")) {
+    return "One platform needs another refresh before the score has a clean read.";
+  }
+
+  const latestStatus = connectedStatuses.sort(
+    (first, second) =>
+      new Date(second.checkedAt).getTime() - new Date(first.checkedAt).getTime(),
+  )[0];
+
+  return `Last checked ${formatRelativeSyncTime(latestStatus.checkedAt)}.`;
+}
+
 function formatCompactNumber(value: number) {
   return Intl.NumberFormat("en", {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
+}
+
+function formatRelativeSyncTime(dateString: string) {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return "recently";
+  }
+
+  const differenceInMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+
+  if (differenceInMinutes < 1) {
+    return "just now";
+  }
+
+  if (differenceInMinutes < 60) {
+    return `${differenceInMinutes}m ago`;
+  }
+
+  const differenceInHours = Math.round(differenceInMinutes / 60);
+
+  if (differenceInHours < 24) {
+    return `${differenceInHours}h ago`;
+  }
+
+  return date.toLocaleDateString("en", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 function getAudiusSignalRead(track: AudiusTrack) {
