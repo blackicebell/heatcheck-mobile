@@ -84,7 +84,7 @@ export function ReleasesScreen() {
 
   return (
     <ScreenContainer onRefresh={refreshReleases} refreshing={refreshing}>
-      <NavigationHeader label="Catalog pulse" actionIcon="disc" />
+      <NavigationHeader label="Catalog pulse" />
       <SectionHeader
         title="Release Radar"
         body="A focused read on which song is getting the clearest movement right now."

@@ -32,7 +32,7 @@ export function AudienceScreen() {
 
   return (
     <ScreenContainer onRefresh={refresh} refreshing={refreshing}>
-      <NavigationHeader label="Listener intent" actionIcon="people" />
+      <NavigationHeader label="Listener intent" />
       <SectionHeader
         title="Audience Shape"
         body="Understand who is leaning in, not just how many people showed up."
