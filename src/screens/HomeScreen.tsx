@@ -34,6 +34,7 @@ import {
   getAudiusConnection,
   getAudiusTracksByHandle,
 } from "@/services/audius";
+import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
@@ -45,9 +46,11 @@ export function HomeScreen() {
   const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
+  const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useMockRefresh(900);
   const topAudiusTrack = audiusTracks[0];
+  const topSpotifyTrack = spotifyConnection?.topTracks[0];
 
   const loadAudiusSignal = useCallback(async () => {
     const connection = await getAudiusConnection();
@@ -71,11 +74,17 @@ export function HomeScreen() {
     setYouTubeConnection(connection);
   }, []);
 
+  const loadSpotifySignal = useCallback(async () => {
+    const connection = await getSpotifyConnection();
+    setSpotifyConnection(connection);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadAudiusSignal();
+      loadSpotifySignal();
       loadYouTubeSignal();
-    }, [loadAudiusSignal, loadYouTubeSignal]),
+    }, [loadAudiusSignal, loadSpotifySignal, loadYouTubeSignal]),
   );
 
   function openAlert() {
@@ -86,6 +95,7 @@ export function HomeScreen() {
   function refreshHome() {
     refresh();
     loadAudiusSignal();
+    loadSpotifySignal();
     loadYouTubeSignal();
   }
 
@@ -239,6 +249,58 @@ export function HomeScreen() {
           </Card>
         </AnimatedView>
       ) : null}
+      {spotifyConnection ? (
+        <AnimatedView delay={220}>
+          <Card elevated>
+            <View style={styles.signalHeader}>
+              <View style={[styles.signalIcon, styles.spotifyIcon]}>
+                <AppText variant="h3" style={styles.spotifyIconText}>
+                  S
+                </AppText>
+              </View>
+              <View style={styles.signalCopy}>
+                <View style={styles.signalTitleRow}>
+                  <AppText variant="h3">Spotify is connected</AppText>
+                  <View style={styles.spotifySignalPill}>
+                    <AppText variant="tiny" style={styles.spotifySignalText}>
+                      Listener signal
+                    </AppText>
+                  </View>
+                </View>
+                <AppText muted>{spotifyConnection.displayName}</AppText>
+              </View>
+            </View>
+            {topSpotifyTrack ? (
+              <>
+                <AppText variant="h2" style={styles.trackTitle}>
+                  {topSpotifyTrack.name}
+                </AppText>
+                <AppText muted>
+                  {topSpotifyTrack.name} by {topSpotifyTrack.artist} is your strongest recent Spotify listening signal.
+                </AppText>
+                <View style={styles.signalMetrics}>
+                  <SignalMetric label="Followers" value={formatCompactNumber(spotifyConnection.followers)} />
+                  <SignalMetric label="Top tracks" value={formatCompactNumber(spotifyConnection.topTracks.length)} />
+                  <SignalMetric label="Popularity" value={`${topSpotifyTrack.popularity}/100`} />
+                </View>
+                <AppText style={styles.signalRead}>
+                  {getSpotifySignalRead(spotifyConnection)}
+                </AppText>
+              </>
+            ) : (
+              <>
+                <View style={styles.signalMetrics}>
+                  <SignalMetric label="Followers" value={formatCompactNumber(spotifyConnection.followers)} />
+                  <SignalMetric label="Top tracks" value="Waiting" />
+                </View>
+                <AppText muted>
+                  Spotify is connected. HeatRadar will show recent top-track movement here once Spotify returns enough listening history.
+                </AppText>
+              </>
+            )}
+          </Card>
+        </AnimatedView>
+      ) : null}
       <SectionHeader title="Since your last alert" />
       <View style={styles.stats}>
         {retentionHighlights.map((item, index) => (
@@ -353,6 +415,12 @@ const styles = StyleSheet.create({
   youtubeIconText: {
     color: colors.white,
   },
+  spotifyIcon: {
+    backgroundColor: "#1DB954",
+  },
+  spotifyIconText: {
+    color: colors.black,
+  },
   signalCopy: {
     flex: 1,
     gap: spacing.xs,
@@ -381,6 +449,16 @@ const styles = StyleSheet.create({
   },
   youtubeSignalText: {
     color: colors.red,
+    fontWeight: "800",
+  },
+  spotifySignalPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(29,185,84,0.16)",
+  },
+  spotifySignalText: {
+    color: "#1DB954",
     fontWeight: "800",
   },
   trackTitle: {
@@ -444,4 +522,22 @@ function getYouTubeSignalRead(connection: YouTubeConnection) {
   }
 
   return "HeatRadar is ready to watch YouTube movement as new uploads start picking up.";
+}
+
+function getSpotifySignalRead(connection: SpotifyConnection) {
+  const topTrack = connection.topTracks[0];
+
+  if (topTrack && topTrack.popularity >= 50) {
+    return "Spotify is showing a strong listener-side signal around your recent top track.";
+  }
+
+  if (topTrack) {
+    return "Spotify is giving HeatRadar a clearer read on what listeners are returning to right now.";
+  }
+
+  if (connection.followers > 0) {
+    return "Your Spotify profile is connected, so follower movement can start feeding the Heat Score.";
+  }
+
+  return "Spotify is ready. HeatRadar will watch for listener movement as your catalog gets more activity.";
 }
