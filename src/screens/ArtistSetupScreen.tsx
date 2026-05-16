@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { updateProfile } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -11,6 +12,8 @@ import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "ArtistSetup">;
+
+const artistProfileStorageKey = "heatradar.artistProfile";
 
 export function ArtistSetupScreen({ navigation }: Props) {
   const [artistName, setArtistName] = useState("");
@@ -32,20 +35,38 @@ export function ArtistSetupScreen({ navigation }: Props) {
     try {
       const displayName = artistName.trim();
 
-      await updateProfile(user, { displayName });
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
+      await AsyncStorage.setItem(
+        artistProfileStorageKey,
+        JSON.stringify({
           artistName: displayName,
-          createdAt: serverTimestamp(),
           email: user.email,
-          plan: "free",
-        },
-        { merge: true },
+          userId: user.uid,
+        }),
       );
+
+      const profileSave = Promise.all([
+        withTimeout(updateProfile(user, { displayName }), 8000),
+        withTimeout(
+          setDoc(
+            doc(db, "users", user.uid),
+            {
+              artistName: displayName,
+              createdAt: serverTimestamp(),
+              email: user.email,
+              plan: "free",
+            },
+            { merge: true },
+          ),
+          8000,
+        ),
+      ]);
 
       notifySuccess();
       navigation.replace("AppTabs");
+
+      profileSave.catch(() => {
+        // The local profile is enough to keep onboarding moving. Firebase can be retried later.
+      });
     } catch {
       setError("We could not save your artist profile yet. Try again in a moment.");
     } finally {
@@ -134,3 +155,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
 });
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("profile-save-timeout"));
+      }, timeoutMs);
+    }),
+  ]);
+}
