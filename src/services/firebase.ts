@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initializeApp } from "firebase/app";
-import * as FirebaseAuth from "firebase/auth";
 import { getAuth, initializeAuth, type Persistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -18,18 +17,28 @@ export const firebaseApp = initializeApp(firebaseConfig);
 export const auth = initializePersistentAuth();
 export const db = getFirestore(firebaseApp);
 
-const getReactNativePersistence = (
-  FirebaseAuth as typeof FirebaseAuth & {
-    getReactNativePersistence: (storage: typeof AsyncStorage) => Persistence;
-  }
-).getReactNativePersistence;
-
 function initializePersistentAuth() {
   try {
     return initializeAuth(firebaseApp, {
-      persistence: getReactNativePersistence(AsyncStorage),
+      persistence: asyncStoragePersistence,
     });
   } catch {
     return getAuth(firebaseApp);
   }
 }
+
+const asyncStoragePersistence = {
+  type: "LOCAL",
+  async _isAvailable() {
+    return true;
+  },
+  async _set(key: string, value: string) {
+    await AsyncStorage.setItem(key, value);
+  },
+  async _get<T extends string>(key: string) {
+    return (await AsyncStorage.getItem(key)) as T | null;
+  },
+  async _remove(key: string) {
+    await AsyncStorage.removeItem(key);
+  },
+} as Persistence;
