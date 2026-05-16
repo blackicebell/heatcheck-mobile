@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     gap: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   dots: {
     flexDirection: "row",
