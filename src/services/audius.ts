@@ -104,3 +104,7 @@ export async function getAudiusConnection() {
     return null;
   }
 }
+
+export async function clearAudiusConnection() {
+  await AsyncStorage.removeItem(audiusConnectionStorageKey);
+}

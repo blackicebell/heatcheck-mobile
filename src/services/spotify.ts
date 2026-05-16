@@ -109,6 +109,10 @@ export async function getSpotifyConnection() {
   }
 }
 
+export async function clearSpotifyConnection() {
+  await AsyncStorage.removeItem(spotifyConnectionStorageKey);
+}
+
 async function getSpotifyProfile(accessToken: string) {
   const response = await fetch(`${spotifyApiBaseUrl}/me`, {
     headers: {

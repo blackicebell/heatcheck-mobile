@@ -80,6 +80,10 @@ export async function getYouTubeConnection() {
   }
 }
 
+export async function clearYouTubeConnection() {
+  await AsyncStorage.removeItem(youtubeConnectionStorageKey);
+}
+
 async function getMyYouTubeChannel(accessToken: string) {
   const params = new URLSearchParams({
     mine: "true",

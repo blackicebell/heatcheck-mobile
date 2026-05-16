@@ -22,6 +22,7 @@ import {
   AudiusConnection,
   AudiusTrack,
   AudiusUser,
+  clearAudiusConnection,
   getAudiusConnection,
   getAudiusTracksByHandle,
   saveAudiusConnection,
@@ -31,11 +32,13 @@ import { clearLocalArtistProfile } from "@/services/artistProfile";
 import { auth } from "@/services/firebase";
 import {
   SpotifyConnection,
+  clearSpotifyConnection,
   connectSpotifyAccount,
   getSpotifyConnection,
 } from "@/services/spotify";
 import {
   YouTubeConnection,
+  clearYouTubeConnection,
   connectYouTubeChannel,
   getYouTubeConnection,
 } from "@/services/youtube";
@@ -201,6 +204,25 @@ export function SettingsScreen() {
     }
   }
 
+  async function refreshAudius() {
+    if (!audiusConnection || connectingId === "audius") {
+      return;
+    }
+
+    impactLight();
+    setAudiusError("");
+    setConnectingId("audius");
+
+    try {
+      await loadAudiusTracks(audiusConnection.handle);
+      notifySuccess();
+    } catch {
+      setAudiusError("Audius did not refresh yet. Check your connection and try again.");
+    } finally {
+      setConnectingId(null);
+    }
+  }
+
   function markAudiusConnected(connection: AudiusConnection) {
     setConnections((items) =>
       items.map((item) =>
@@ -213,6 +235,15 @@ export function SettingsScreen() {
           : item,
       ),
     );
+  }
+
+  async function disconnectAudius() {
+    impactLight();
+    await clearAudiusConnection();
+    setAudiusConnection(null);
+    setAudiusTracks([]);
+    resetPlatformConnection("audius");
+    notifySuccess();
   }
 
   async function connectYouTube() {
@@ -250,6 +281,15 @@ export function SettingsScreen() {
     );
   }
 
+  async function disconnectYouTube() {
+    impactLight();
+    await clearYouTubeConnection();
+    setYouTubeConnection(null);
+    setYouTubeError("");
+    resetPlatformConnection("youtube");
+    notifySuccess();
+  }
+
   async function connectSpotify() {
     if (connectingId === "spotify") {
       return;
@@ -282,6 +322,27 @@ export function SettingsScreen() {
             }
           : item,
       ),
+    );
+  }
+
+  async function disconnectSpotify() {
+    impactLight();
+    await clearSpotifyConnection();
+    setSpotifyConnection(null);
+    setSpotifyError("");
+    resetPlatformConnection("spotify");
+    notifySuccess();
+  }
+
+  function resetPlatformConnection(platformId: string) {
+    const originalPlatform = platformConnections.find((platform) => platform.id === platformId);
+
+    if (!originalPlatform) {
+      return;
+    }
+
+    setConnections((items) =>
+      items.map((item) => (item.id === platformId ? originalPlatform : item)),
     );
   }
 
@@ -429,6 +490,8 @@ export function SettingsScreen() {
               connection={audiusConnection}
               error={audiusError}
               onConnect={connectAudius}
+              onDisconnect={disconnectAudius}
+              onRefresh={refreshAudius}
               onSearch={searchAudius}
               query={audiusQuery}
               results={audiusResults}
@@ -442,6 +505,8 @@ export function SettingsScreen() {
               error={youtubeError}
               loading={connectingId === "youtube"}
               onConnect={connectYouTube}
+              onDisconnect={disconnectYouTube}
+              onRefresh={connectYouTube}
             />
           ) : connectionModal.id === "spotify" ? (
             <SpotifyConnectionContent
@@ -449,6 +514,8 @@ export function SettingsScreen() {
               error={spotifyError}
               loading={connectingId === "spotify"}
               onConnect={connectSpotify}
+              onDisconnect={disconnectSpotify}
+              onRefresh={connectSpotify}
             />
           ) : (
             <>
@@ -561,12 +628,25 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: spacing.sm,
   },
+  actionRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  dangerText: {
+    color: colors.red,
+    fontWeight: "800",
+  },
 });
 
 type AudiusConnectionContentProps = {
   connection: AudiusConnection | null;
   error: string;
   onConnect: (user: AudiusUser) => void;
+  onDisconnect: () => void;
+  onRefresh: () => void;
   onSearch: () => void;
   query: string;
   results: AudiusUser[];
@@ -579,6 +659,8 @@ function AudiusConnectionContent({
   connection,
   error,
   onConnect,
+  onDisconnect,
+  onRefresh,
   onSearch,
   query,
   results,
@@ -593,6 +675,17 @@ function AudiusConnectionContent({
         <AppText muted>
           @{connection.handle} is now feeding real public Audius context into this preview.
         </AppText>
+        <AppText variant="small" muted>
+          Last synced {formatSyncTime(connection.connectedAt)}
+        </AppText>
+        <View style={styles.actionRow}>
+          <Button loading={searching} onPress={onRefresh} style={styles.actionButton}>
+            Refresh
+          </Button>
+          <Button variant="secondary" onPress={onDisconnect} style={styles.actionButton}>
+            Disconnect
+          </Button>
+        </View>
         <SectionHeader title="Top public tracks" />
         {tracks.length > 0 ? (
           <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
@@ -693,6 +786,8 @@ type YouTubeConnectionContentProps = {
   error: string;
   loading: boolean;
   onConnect: () => void;
+  onDisconnect: () => void;
+  onRefresh: () => void;
 };
 
 function YouTubeConnectionContent({
@@ -700,6 +795,8 @@ function YouTubeConnectionContent({
   error,
   loading,
   onConnect,
+  onDisconnect,
+  onRefresh,
 }: YouTubeConnectionContentProps) {
   if (connection) {
     return (
@@ -707,6 +804,9 @@ function YouTubeConnectionContent({
         <AppText variant="h2">YouTube is connected</AppText>
         <AppText muted>
           {connection.title} is now connected with read-only channel access.
+        </AppText>
+        <AppText variant="small" muted>
+          Last synced {formatSyncTime(connection.connectedAt)}
         </AppText>
         <View style={styles.youtubeMetricGrid}>
           <MetricPill label={`${formatCompactNumber(connection.viewCount)} views`} />
@@ -716,6 +816,14 @@ function YouTubeConnectionContent({
         <AppText muted>
           Next we can turn uploads, views, and subscriber movement into HeatRadar signals.
         </AppText>
+        <View style={styles.actionRow}>
+          <Button loading={loading} onPress={onRefresh} style={styles.actionButton}>
+            Refresh
+          </Button>
+          <Button variant="secondary" onPress={onDisconnect} style={styles.actionButton}>
+            Disconnect
+          </Button>
+        </View>
       </>
     );
   }
@@ -755,6 +863,8 @@ type SpotifyConnectionContentProps = {
   error: string;
   loading: boolean;
   onConnect: () => void;
+  onDisconnect: () => void;
+  onRefresh: () => void;
 };
 
 function SpotifyConnectionContent({
@@ -762,6 +872,8 @@ function SpotifyConnectionContent({
   error,
   loading,
   onConnect,
+  onDisconnect,
+  onRefresh,
 }: SpotifyConnectionContentProps) {
   if (connection) {
     const topTrack = connection.topTracks[0];
@@ -771,6 +883,9 @@ function SpotifyConnectionContent({
         <AppText variant="h2">Spotify is connected</AppText>
         <AppText muted>
           {connection.displayName} is connected with read-only Spotify access.
+        </AppText>
+        <AppText variant="small" muted>
+          Last synced {formatSyncTime(connection.connectedAt)}
         </AppText>
         <View style={styles.youtubeMetricGrid}>
           <MetricPill label={`${formatCompactNumber(connection.followers)} followers`} />
@@ -785,6 +900,14 @@ function SpotifyConnectionContent({
             Spotify is connected. HeatRadar will show top-track context once Spotify returns enough listening history.
           </AppText>
         )}
+        <View style={styles.actionRow}>
+          <Button loading={loading} onPress={onRefresh} style={styles.actionButton}>
+            Refresh
+          </Button>
+          <Button variant="secondary" onPress={onDisconnect} style={styles.actionButton}>
+            Disconnect
+          </Button>
+        </View>
       </>
     );
   }
@@ -829,6 +952,19 @@ function getConnectionStyle(status: ConnectionStatus) {
   }
 
   return styles.connect;
+}
+
+function formatSyncTime(dateString: string) {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return "recently";
+  }
+
+  return date.toLocaleDateString("en", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 function getPlatformIcon(platformId: string): keyof typeof Ionicons.glyphMap {
