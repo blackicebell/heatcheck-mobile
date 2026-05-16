@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc } from "firebase/firestore";
 
-import { db } from "@/services/firebase";
+import { auth, db } from "@/services/firebase";
 
 const artistProfileStorageKey = "heatradar.artistProfile";
 
@@ -26,9 +26,35 @@ export async function needsArtistSetup(userId: string) {
     return false;
   }
 
+  const authDisplayName = auth.currentUser?.uid === userId ? auth.currentUser.displayName : null;
+
+  if (hasValidArtistName(authDisplayName)) {
+    const savedAuthDisplayName = typeof authDisplayName === "string" ? authDisplayName.trim() : "";
+
+    await saveLocalArtistProfile({
+      artistName: savedAuthDisplayName,
+      email: auth.currentUser?.email ?? null,
+      userId,
+    });
+
+    return false;
+  }
+
   try {
     const snapshot = await withTimeout(getDoc(doc(db, "users", userId)), 8000);
     const artistName = snapshot.exists() ? snapshot.data().artistName : undefined;
+
+    if (hasValidArtistName(artistName)) {
+      const savedArtistName = typeof artistName === "string" ? artistName.trim() : "";
+
+      await saveLocalArtistProfile({
+        artistName: savedArtistName,
+        email: auth.currentUser?.email ?? null,
+        userId,
+      });
+
+      return false;
+    }
 
     return !hasValidArtistName(artistName);
   } catch {

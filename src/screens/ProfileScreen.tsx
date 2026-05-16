@@ -2,11 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { updateProfile } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import {
   AppText,
+  BottomSheetModal,
+  Button,
   Card,
   EmptyState,
   NavigationHeader,
@@ -18,6 +22,8 @@ import {
   emptyStates,
 } from "@/data/mockData";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
+import { saveLocalArtistProfile } from "@/services/artistProfile";
+import { auth, db } from "@/services/firebase";
 import {
   AudiusConnection,
   getAudiusConnection,
@@ -29,14 +35,20 @@ import {
   getPlatformSyncStatuses,
 } from "@/services/syncStatus";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
-import { colors, spacing } from "@/theme";
+import { colors, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
+import { impactLight, notifySuccess } from "@/utils/haptics";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Profile">;
 
 export function ProfileScreen({ navigation }: Props) {
   const artistIdentity = useArtistIdentity();
   const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
+  const [artistName, setArtistName] = useState(artistIdentity.name);
+  const [draftArtistName, setDraftArtistName] = useState(artistIdentity.name);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
@@ -71,6 +83,14 @@ export function ProfileScreen({ navigation }: Props) {
     [audiusConnection, spotifyConnection, syncStatuses, youtubeConnection],
   );
   const syncedCount = Object.values(syncStatuses).filter((status) => status?.state === "success").length;
+  const displayName = artistName.trim() || artistIdentity.name;
+  const displayHandle = toHandle(displayName);
+  const canSaveProfile = draftArtistName.trim().length >= 2;
+
+  useEffect(() => {
+    setArtistName(artistIdentity.name);
+    setDraftArtistName(artistIdentity.name);
+  }, [artistIdentity.name]);
 
   const loadProfileSignals = useCallback(async () => {
     const [savedAudiusConnection, savedSpotifyConnection, savedSyncStatuses, savedYouTubeConnection] =
@@ -92,6 +112,51 @@ export function ProfileScreen({ navigation }: Props) {
       loadProfileSignals();
     }, [loadProfileSignals]),
   );
+
+  async function saveProfileName() {
+    const user = auth.currentUser;
+
+    if (!user || !canSaveProfile || profileSaving) {
+      return;
+    }
+
+    impactLight();
+    setProfileError("");
+    setProfileSaving(true);
+
+    const nextName = draftArtistName.trim();
+
+    try {
+      await saveLocalArtistProfile({
+        artistName: nextName,
+        email: user.email,
+        userId: user.uid,
+      });
+
+      setArtistName(nextName);
+      setEditProfileOpen(false);
+      notifySuccess();
+
+      Promise.all([
+        updateProfile(user, { displayName: nextName }),
+        setDoc(
+          doc(db, "users", user.uid),
+          {
+            artistName: nextName,
+            email: user.email,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        ),
+      ]).catch(() => {
+        // Local save keeps the app correct immediately. Remote profile sync can retry later.
+      });
+    } catch {
+      setProfileError("We could not update your artist name yet. Try again.");
+    } finally {
+      setProfileSaving(false);
+    }
+  }
 
   return (
     <ScreenContainer>
@@ -116,10 +181,24 @@ export function ProfileScreen({ navigation }: Props) {
           <View style={styles.avatarPulse} />
         </LinearGradient>
         <View style={styles.profileCopy}>
-          <AppText variant="h1">{artistIdentity.name}</AppText>
+          <AppText variant="h1">{displayName}</AppText>
           <AppText muted>
-            {artistIdentity.handle} / {artistIdentity.city}
+            {displayHandle} / {artistIdentity.city}
           </AppText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              impactLight();
+              setProfileError("");
+              setDraftArtistName(displayName);
+              setEditProfileOpen(true);
+            }}
+            style={({ pressed }) => [styles.editNameButton, pressed ? styles.pressed : undefined]}
+          >
+            <AppText variant="small" style={styles.editNameText}>
+              Edit artist name
+            </AppText>
+          </Pressable>
         </View>
       </View>
 
@@ -167,6 +246,32 @@ export function ProfileScreen({ navigation }: Props) {
       ) : (
         <EmptyState icon="link" {...emptyStates.connectedAccounts} />
       )}
+      <BottomSheetModal
+        visible={editProfileOpen}
+        onClose={() => setEditProfileOpen(false)}
+        title="Edit artist name"
+      >
+        <AppText muted>
+          This name appears across your dashboard, alerts, and share cards.
+        </AppText>
+        <TextInput
+          autoCapitalize="words"
+          onChangeText={setDraftArtistName}
+          placeholder="Your artist or stage name"
+          placeholderTextColor={colors.textSubtle}
+          returnKeyType="done"
+          style={styles.input}
+          value={draftArtistName}
+        />
+        {profileError ? (
+          <AppText variant="small" style={styles.error}>
+            {profileError}
+          </AppText>
+        ) : null}
+        <Button disabled={!canSaveProfile} loading={profileSaving} onPress={saveProfileName}>
+          Save name
+        </Button>
+      </BottomSheetModal>
     </ScreenContainer>
   );
 }
@@ -213,6 +318,16 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  editNameButton: {
+    alignSelf: "flex-start",
+    paddingTop: spacing.xs,
+  },
+  editNameText: {
+    color: colors.green,
+  },
+  pressed: {
+    opacity: 0.78,
+  },
   summaryHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -246,6 +361,20 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  input: {
+    minHeight: 52,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    color: colors.text,
+    backgroundColor: colors.backgroundElevated,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  error: {
+    color: colors.red,
+  },
 });
 
 function SummaryMetric({ label, value }: { label: string; value: string }) {
@@ -269,6 +398,16 @@ function formatSyncStatus(status?: PlatformSyncStatus) {
   }
 
   return `${status.message} ${formatRelativeTime(status.checkedAt)}`;
+}
+
+function toHandle(name: string) {
+  const handle = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "");
+
+  return handle ? `@${handle}` : "@artist";
 }
 
 function formatRelativeTime(dateString: string) {

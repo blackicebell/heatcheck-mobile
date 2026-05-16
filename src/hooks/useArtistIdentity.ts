@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useState } from "react";
 
 import { artist as mockArtist } from "@/data/mockData";
 import { getLocalArtistProfile } from "@/services/artistProfile";
@@ -18,27 +19,29 @@ export function useArtistIdentity() {
     buildArtistIdentity(auth.currentUser?.displayName),
   );
 
-  useEffect(() => {
-    let active = true;
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
 
-    async function loadIdentity() {
-      const localProfile = await getLocalArtistProfile();
-      const profileName =
-        localProfile?.userId === auth.currentUser?.uid
-          ? localProfile?.artistName
-          : auth.currentUser?.displayName;
+      async function loadIdentity() {
+        const localProfile = await getLocalArtistProfile();
+        const profileName =
+          localProfile?.userId === auth.currentUser?.uid
+            ? localProfile?.artistName
+            : auth.currentUser?.displayName;
 
-      if (active) {
-        setIdentity(buildArtistIdentity(profileName));
+        if (active) {
+          setIdentity(buildArtistIdentity(profileName));
+        }
       }
-    }
 
-    loadIdentity();
+      loadIdentity();
 
-    return () => {
-      active = false;
-    };
-  }, []);
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   return identity;
 }
