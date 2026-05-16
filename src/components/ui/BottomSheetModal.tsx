@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { ReactNode } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppText } from "@/components/ui/AppText";
@@ -27,30 +27,40 @@ export function BottomSheetModal({
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={close}>
-      <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} />
-        <SafeAreaView style={styles.sheet} edges={["bottom"]}>
-          <View style={styles.handle} />
-          <View style={styles.header}>
-            <AppText variant="h2">{title}</AppText>
-            <Pressable accessibilityRole="button" onPress={close} style={styles.close}>
-              <Ionicons name="close" size={20} color={colors.text} />
-            </Pressable>
-          </View>
-          <View style={styles.content}>{children}</View>
-        </SafeAreaView>
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 18}
+        style={styles.keyboardAvoider}
+      >
+        <View style={styles.backdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+          <SafeAreaView style={styles.sheet} edges={["bottom"]}>
+            <View style={styles.handle} />
+            <View style={styles.header}>
+              <AppText variant="h2">{title}</AppText>
+              <Pressable accessibilityRole="button" onPress={close} style={styles.close}>
+                <Ionicons name="close" size={20} color={colors.text} />
+              </Pressable>
+            </View>
+            <View style={styles.content}>{children}</View>
+          </SafeAreaView>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoider: {
+    flex: 1,
+  },
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0,0,0,0.56)",
   },
   sheet: {
+    maxHeight: "88%",
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     paddingHorizontal: spacing.lg,
