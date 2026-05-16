@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "717353489884",
+    "project_id": "heatradar-689ef",
+    "storage_bucket": "heatradar-689ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:717353489884:android:f28b421f01352d3028ab19",
+        "android_client_info": {
+          "package_name": "com.blackicebell.heatradar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "717353489884-aajuloleq50fdfsgshkt2ro4unbih760.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blackicebell.heatradar",
+            "certificate_hash": "f483e6a4bf2d6de09d8229a2bbb19c81d50e8c5f"
+          }
+        },
+        {
+          "client_id": "717353489884-58ran11gduia9jo59gbj0uunkjhaj3e4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQ4IyrkL-kpeq2VF7HoJkQa7C8ukwMXiU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "717353489884-58ran11gduia9jo59gbj0uunkjhaj3e4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -13,10 +13,11 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.blackicebell.heatradar",
-      "adaptiveIcon": {
-        "backgroundColor": "#050608"
-      }
+  "package": "com.blackicebell.heatradar",
+  "googleServicesFile": "./google-services.json",
+  "adaptiveIcon": {
+    "backgroundColor": "#050608"
+  }
     },
     "web": {
       "bundler": "metro"

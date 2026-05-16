@@ -25,3 +25,5 @@ web-build
 *.njsproj
 *.sln
 *.sw?
+
+*.jks
