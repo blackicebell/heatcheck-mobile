@@ -423,10 +423,10 @@ export function SettingsScreen() {
     <ScreenContainer>
       <NavigationHeader label="Signal settings" />
       <SectionHeader
-        title="Settings."
+        title="Settings"
         body="Keep HeatRadar focused on the signals that tell you when listener movement is picking up."
       />
-      <SectionHeader title="Platform connections" />
+      <SectionHeader title="Platform Connections" />
       <StaggeredList
         data={connections}
         keyExtractor={(platform) => platform.id}
@@ -466,7 +466,7 @@ export function SettingsScreen() {
                       loading={isConnecting}
                       status={syncStatuses[platform.id as PlatformId]}
                     />
-                    <AppText variant="tiny" muted>
+                    <AppText variant="small" muted style={styles.platformPermission}>
                       {platform.permission}
                     </AppText>
                   </View>
@@ -492,7 +492,7 @@ export function SettingsScreen() {
           );
         }}
       />
-      <SectionHeader title="Notification settings" />
+      <SectionHeader title="Notification Settings" />
       <Card>
         <View style={styles.notificationHeader}>
           <View style={styles.notificationIcon}>
@@ -639,6 +639,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.surfaceSoft,
+  },
+  platformPermission: {
+    fontWeight: "600",
+    lineHeight: 19,
   },
   connected: {
     color: colors.green,

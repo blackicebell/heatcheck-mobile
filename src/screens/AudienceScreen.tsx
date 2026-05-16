@@ -34,7 +34,7 @@ export function AudienceScreen() {
     <ScreenContainer onRefresh={refresh} refreshing={refreshing}>
       <NavigationHeader label="Listener intent" actionIcon="people" />
       <SectionHeader
-        title="Audience shape."
+        title="Audience Shape"
         body="Understand who is leaning in, not just how many people showed up."
       />
       {audienceSegments.length > 0 ? (

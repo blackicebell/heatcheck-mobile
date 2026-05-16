@@ -83,7 +83,7 @@ export function InsightsScreen() {
     <ScreenContainer onRefresh={refreshInsights} refreshing={refreshing}>
       <NavigationHeader label="Daily read" actionIcon="flash" />
       <SectionHeader
-        title="Signal reads."
+        title="Signal Reads"
         body="Plain-language reads from the platforms already feeding your Heat Score."
       />
       {signalInsights.length > 0 ? (
