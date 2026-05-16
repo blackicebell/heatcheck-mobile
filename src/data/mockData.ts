@@ -229,39 +229,39 @@ export const accountSettings = [
 
 export const platformConnections = [
   {
-    id: "spotify",
-    name: "Spotify",
+    id: "audius",
+    name: "Audius",
     status: "Connected",
-    detail: "Streams, saves, listeners",
-    permission: "HeatRadar reads streams, saves, and listener movement. It never posts for you.",
-  },
-  {
-    id: "youtube",
-    name: "YouTube",
-    status: "Not connected",
-    detail: "Views, subscribers, retention",
-    permission: "HeatRadar reads video performance and retention signals. Your channel stays in your control.",
-  },
-  {
-    id: "instagram",
-    name: "Instagram",
-    status: "Failed",
-    detail: "Reels, profile visits, engagement",
-    permission: "HeatRadar reads public content signals and engagement movement. It does not send messages or post.",
+    detail: "Tracks, favorites, reposts",
+    permission: "HeatRadar reads public track movement and engagement. It never posts for you.",
   },
   {
     id: "soundcloud",
     name: "SoundCloud",
-    status: "Reconnect",
+    status: "Not connected",
     detail: "Plays, likes, reposts",
     permission: "HeatRadar reads track movement so early traction is easier to spot.",
+  },
+  {
+    id: "youtube",
+    name: "YouTube",
+    status: "Reconnect",
+    detail: "Views, subscribers, retention",
+    permission: "HeatRadar reads video performance and retention signals. Your channel stays in your control.",
+  },
+  {
+    id: "spotify",
+    name: "Spotify",
+    status: "Not connected",
+    detail: "Catalog, followers, top tracks",
+    permission: "HeatRadar reads available catalog and listener context. It cannot access Spotify for Artists private analytics yet.",
   },
 ];
 
 export const emptyStates = {
   connectedAccounts: {
     title: "Connect one account to start feeling the heat",
-    body: "Start with Spotify or YouTube. HeatRadar only needs enough signal to show what is beginning to move.",
+    body: "Start with Audius or SoundCloud. HeatRadar only needs enough signal to show what is beginning to move.",
   },
   insights: {
     title: "No fresh signals yet",

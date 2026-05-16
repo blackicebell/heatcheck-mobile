@@ -6,7 +6,9 @@ Current flow:
 
 1. Splash introduces HeatRadar.
 2. Onboarding explains audience movement, why the artist is getting heat, and progress/reward.
-3. Login preview enters the mock app without real authentication.
+3. Login supports Firebase email/password and Google sign-in.
+4. Artist Setup captures the artist or stage name.
+5. Returning signed-in users skip onboarding and login.
 
 Goal:
 
@@ -24,6 +26,7 @@ Root stack:
 - Splash
 - Onboarding
 - Login
+- ArtistSetup
 - AppTabs
 - Notifications
 - HeatScoreEducation
@@ -88,10 +91,10 @@ Notifications should create curiosity without pressure.
 
 Settings includes fake platform connections for:
 
-- Spotify
-- YouTube
-- Instagram
+- Audius
 - SoundCloud
+- YouTube
+- Spotify
 
 Current states:
 
@@ -101,7 +104,7 @@ Current states:
 - reconnect
 - loading
 
-Each platform includes permission explanation copy. Real OAuth is not implemented.
+Each platform includes permission explanation copy. Real platform OAuth is not implemented.
 
 ## Paywall And Trial Flow
 

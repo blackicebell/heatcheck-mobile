@@ -2,9 +2,9 @@
 
 ## Current Prototype Status
 
-HeatRadar is currently a frontend-only Expo React Native prototype. It is designed to validate product direction, UX flows, copy, information hierarchy, and emotional retention mechanics.
+HeatRadar is currently an Expo React Native prototype with Firebase Auth connected. It is designed to validate product direction, UX flows, copy, information hierarchy, and emotional retention mechanics.
 
-The app is not production-ready yet because there is no real backend, authentication, platform data, push notification delivery, native sharing, or subscription implementation.
+The app is not production-ready yet because there is no production backend for platform data, push notification delivery, native sharing, or subscription implementation.
 
 ## What Is Completed
 
@@ -12,7 +12,8 @@ Screens:
 
 - Splash
 - Onboarding
-- Login preview
+- Login
+- Artist Setup
 - Home
 - Insights
 - Releases
@@ -53,9 +54,8 @@ Mock flows:
 
 ## What Uses Mock Data
 
-All product data currently comes from `src/data/mockData.ts`, including:
+Most product data currently comes from `src/data/mockData.ts`, including:
 
-- artist profile
 - Heat Score
 - Heat Score contributors
 - insights
@@ -68,11 +68,12 @@ All product data currently comes from `src/data/mockData.ts`, including:
 - share card content
 - empty state content
 
+Firebase Auth is real. Artist name is saved locally and attempted in Firestore, then used in Home, Profile, and Settings.
+
 ## Backend Work Still Needed
 
-- real authentication
-- user profile persistence
-- artist profile persistence
+- production user profile persistence
+- production artist profile persistence
 - platform connection token handling
 - platform sync jobs
 - Heat Score calculation
@@ -83,17 +84,16 @@ All product data currently comes from `src/data/mockData.ts`, including:
 
 ## APIs Not Integrated Yet
 
-- Spotify OAuth/API
+- Audius API
+- SoundCloud OAuth/API
 - YouTube/Google OAuth/API
-- Instagram/Meta API
-- SoundCloud API
+- Spotify OAuth/API
 - real push notification service
 - real payment/subscription provider
 - native sharing
 
 ## Known Limitations
 
-- UI state resets on reload.
 - Platform connection state is local-only.
 - Notification read state is local-only.
 - Heat Score is static mock data.
@@ -106,14 +106,16 @@ All product data currently comes from `src/data/mockData.ts`, including:
 
 1. Run and QA the Expo app on real devices.
 2. Clean up package versions if needed after installing dependencies.
-3. Add Firebase Auth and user profile persistence.
-4. Implement Firestore security rules and schema.
-5. Add Spotify OAuth as the first real platform integration.
+3. Harden Firebase Auth, Firestore rules, and user profile persistence.
+4. Add Audius as the first real platform proof of concept.
+5. Add SoundCloud OAuth/API as the second platform integration.
 6. Replace Heat Score mock data with backend snapshots.
-7. Add real notification storage and read states.
-8. Implement push notifications and cooldown logic.
-9. Implement subscription entitlement handling.
-10. Prepare App Store and Play Store deployment requirements.
+7. Add YouTube/Google API integration.
+8. Add Spotify catalog/context integration.
+9. Add real notification storage and read states.
+10. Implement push notifications and cooldown logic.
+11. Implement subscription entitlement handling.
+12. Prepare App Store and Play Store deployment requirements.
 
 ## Recommended Next Engineering Steps
 

@@ -126,7 +126,7 @@ Example `subscriptions/{userId}`:
 3. User and artist profile persistence.
 4. Firestore security rules.
 5. Platform connection records.
-6. Spotify sync proof of concept.
+6. Audius sync proof of concept.
 7. Heat Score snapshots.
 8. Notifications and notification settings.
 9. Subscription entitlement state.

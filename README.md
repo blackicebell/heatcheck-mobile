@@ -29,7 +29,7 @@ Not built yet:
 - real authentication
 - Firebase backend
 - real platform OAuth
-- real Spotify, YouTube, Instagram, or SoundCloud data
+- real Audius, SoundCloud, YouTube, or Spotify music-platform data
 - real push notifications
 - real payments/subscriptions
 - native sharing

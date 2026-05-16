@@ -1,83 +1,63 @@
 # API Roadmap
 
-No real APIs are currently integrated. All data is mocked in `src/data/mockData.ts`.
+No real music-platform APIs are currently integrated. Account access uses Firebase Auth, while product data still comes from `src/data/mockData.ts`.
 
-## Platform Integration Goals
+## Platform Strategy
 
-### Spotify
+HeatRadar should prioritize platforms that feel native to independent artists and early audience movement:
+
+1. Audius
+2. SoundCloud
+3. YouTube
+4. Spotify
+
+Shazam is intentionally out of scope. It points the product toward recognition tech instead of artist growth tracking.
+
+## Phase 1: Audius
+
+Why first:
+
+- indie-friendly platform fit
+- public developer API
+- good first proof for real track and engagement data
+- lower OAuth and approval friction than larger platforms
 
 Goals:
 
-- connect artist account or relevant artist profile
-- read streams, saves, listeners, followers, playlist activity where available
-- support release-level performance
-- support audience growth and repeat listener signals
+- connect or search an artist profile
+- read track catalog and public engagement
+- detect track-level movement
+- feed basic Heat Score inputs
 
 Potential data:
 
-- track streams
-- saves
-- listeners
-- follower changes
-- playlist adds
+- track plays
+- favorites
+- reposts
+- comments
+- follower count
 - release dates
+- trending/context signals where available
 
-OAuth:
+Implementation notes:
 
-- Spotify OAuth required
-- backend should store encrypted refresh tokens
-- client should never directly own long-lived provider tokens
+- start with read-only endpoints
+- keep API keys off the client once a backend exists
+- normalize Audius data before it reaches screens
 
-### YouTube
+## Phase 1: SoundCloud
 
-Goals:
+Why early:
 
-- read channel/video performance
-- detect upload engagement spikes
-- support release/video traction
-
-Potential data:
-
-- views
-- watch time or retention where available
-- likes
-- comments
-- subscribers
-- upload dates
-
-OAuth:
-
-- Google OAuth required
-- scopes should be minimal and clearly explained
-
-### Instagram
+- very relevant for indie artists, demos, remixes, DJs, and early fans
+- culturally aligned with artist discovery
+- helps HeatRadar feel less like generic streaming analytics
 
 Goals:
 
-- read public content and engagement movement
-- detect Reels/posts that may influence music traction
-- support social conversion signals
-
-Potential data:
-
-- reach
-- likes
-- comments
-- shares if available
-- profile visits if available
-- content publish dates
-
-OAuth:
-
-- Meta/Instagram Graph API approval may be required
-- scope availability depends on account type and app review
-
-### SoundCloud
-
-Goals:
-
-- support early independent artist traction
-- read plays, likes, reposts, comments where API access allows
+- connect SoundCloud account or profile
+- read track-level movement where API access allows
+- support early traction cards and release movement
 
 Potential data:
 
@@ -88,19 +68,82 @@ Potential data:
 - followers
 - track publish dates
 
+Risks:
+
+- advanced SoundCloud Insights may depend on SoundCloud account tier or API access
+- verify available analytics before promising deep SoundCloud stats
+
 OAuth:
 
-- depends on current SoundCloud API access and approval process
+- SoundCloud OAuth required for private/account-level data
+- backend should store encrypted refresh tokens
+
+## Phase 2: YouTube
+
+Why next:
+
+- strong signal for music videos, shorts, visualizers, and performance clips
+- useful engagement data for artists who promote through video
+
+Goals:
+
+- connect Google/YouTube account
+- read channel and video performance
+- detect engagement spikes around uploads
+- support release/video traction
+
+Potential data:
+
+- views
+- likes
+- comments
+- subscribers
+- upload dates
+- retention/watch-time where available through approved scopes
+
+OAuth:
+
+- Google OAuth required
+- use minimal scopes and clear permission copy
+
+## Phase 3: Spotify
+
+Why later:
+
+- important credibility and catalog context
+- public Spotify API is useful, but does not replace Spotify for Artists analytics
+
+Goals:
+
+- connect Spotify user/account
+- read available catalog, artist, follower, and track context
+- support release metadata and audience context where available
+
+Potential data:
+
+- artist profile metadata
+- top tracks
+- followers
+- release dates
+- playlists and catalog context where available
+
+Risks:
+
+- public Spotify API may not provide private artist analytics such as true streams, saves, and listener demographics
+- avoid positioning Spotify as the primary source of Heat Score until data access is verified
 
 ## MVP API Priorities
 
-1. Authenticated user identity
+1. Firebase user identity
 2. Artist profile persistence
-3. Platform connection records
-4. Spotify connection and basic metrics
-5. Heat Score input snapshots
-6. Notifications and settings
-7. Subscription entitlement state
+3. Provider connection records
+4. Audius read-only proof of concept
+5. SoundCloud read-only proof of concept
+6. Heat Score input snapshots
+7. YouTube connection and video metrics
+8. Spotify catalog/context connection
+9. Notification settings and in-app notification records
+10. Subscription entitlement state
 
 ## Mock Data Vs Future Real Data
 
