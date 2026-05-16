@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable } from "react-native";
 import { StyleSheet, View } from "react-native";
 
@@ -14,31 +15,83 @@ import {
 } from "@/components";
 import { emptyStates, releases } from "@/data/mockData";
 import { useMockRefresh } from "@/hooks/useMockRefresh";
+import {
+  AudiusTrack,
+  getAudiusConnection,
+  getAudiusTracksByHandle,
+} from "@/services/audius";
+import { buildReleaseRadar, ReleaseRadarItem } from "@/services/releaseRadar";
+import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
+import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, radii, spacing } from "@/theme";
 import { clampPercentage } from "@/utils/format";
 import { impactMedium } from "@/utils/haptics";
 
-type Release = (typeof releases)[number];
-
 export function ReleasesScreen() {
-  const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
+  const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
+  const [selectedRelease, setSelectedRelease] = useState<ReleaseRadarItem | null>(null);
+  const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useMockRefresh();
+  const releaseRadar = useMemo(
+    () =>
+      buildReleaseRadar({
+        audiusTracks,
+        baseReleases: releases,
+        spotifyConnection,
+        youtubeConnection,
+      }),
+    [audiusTracks, spotifyConnection, youtubeConnection],
+  );
 
-  function openRelease(release: Release) {
+  const loadReleaseSignals = useCallback(async () => {
+    const [savedAudiusConnection, savedSpotifyConnection, savedYouTubeConnection] = await Promise.all([
+      getAudiusConnection(),
+      getSpotifyConnection(),
+      getYouTubeConnection(),
+    ]);
+
+    setSpotifyConnection(savedSpotifyConnection);
+    setYouTubeConnection(savedYouTubeConnection);
+
+    if (!savedAudiusConnection) {
+      setAudiusTracks([]);
+      return;
+    }
+
+    try {
+      setAudiusTracks(await getAudiusTracksByHandle(savedAudiusConnection.handle));
+    } catch {
+      setAudiusTracks([]);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadReleaseSignals();
+    }, [loadReleaseSignals]),
+  );
+
+  function refreshReleases() {
+    refresh();
+    loadReleaseSignals();
+  }
+
+  function openRelease(release: ReleaseRadarItem) {
     impactMedium();
     setSelectedRelease(release);
   }
 
   return (
-    <ScreenContainer onRefresh={refresh} refreshing={refreshing}>
+    <ScreenContainer onRefresh={refreshReleases} refreshing={refreshing}>
       <NavigationHeader label="Catalog pulse" actionIcon="disc" />
       <SectionHeader
-        title="Release health."
-        body="A quick read on what needs lift, patience, or a sharper campaign beat."
+        title="Release Radar."
+        body="A focused read on which song is getting the clearest movement right now."
       />
-      {releases.length > 0 ? (
+      {releaseRadar.length > 0 ? (
         <StaggeredList
-          data={releases}
+          data={releaseRadar}
           keyExtractor={(release) => release.title}
           renderItem={(release) => (
             <Pressable
@@ -58,6 +111,10 @@ export function ReleasesScreen() {
                     <AppText muted>
                       {release.date} / {release.status}
                     </AppText>
+                    <View style={styles.badgeRow}>
+                      <SignalBadge label={release.platform} />
+                      <SignalBadge label={release.confidence} quiet />
+                    </View>
                   </View>
                 </View>
                 <View style={styles.track}>
@@ -87,6 +144,20 @@ export function ReleasesScreen() {
               <AppText muted>Release heat</AppText>
             </View>
             <AppText muted>{selectedRelease.detail}</AppText>
+            <View style={styles.driverGrid}>
+              {selectedRelease.drivers.map((driver) => (
+                <View key={driver.label} style={styles.driverCard}>
+                  <AppText variant="tiny" muted>
+                    {driver.label}
+                  </AppText>
+                  <AppText variant="h3">{driver.value}</AppText>
+                </View>
+              ))}
+            </View>
+            <Card>
+              <AppText variant="h3">Best next move</AppText>
+              <AppText muted>{selectedRelease.action}</AppText>
+            </Card>
             <View style={styles.track}>
               <View
                 style={[
@@ -144,4 +215,52 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.lg,
   },
+  badgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(68,240,138,0.14)",
+  },
+  badgeQuiet: {
+    backgroundColor: colors.surfaceSoft,
+  },
+  badgeText: {
+    color: colors.green,
+    fontWeight: "800",
+  },
+  badgeTextQuiet: {
+    color: colors.textMuted,
+  },
+  driverGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  driverCard: {
+    flexGrow: 1,
+    flexBasis: "45%",
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceSoft,
+  },
 });
+
+function SignalBadge({ label, quiet }: { label: string; quiet?: boolean }) {
+  return (
+    <View style={[styles.badge, quiet ? styles.badgeQuiet : undefined]}>
+      <AppText
+        variant="tiny"
+        style={[styles.badgeText, quiet ? styles.badgeTextQuiet : undefined]}
+      >
+        {label}
+      </AppText>
+    </View>
+  );
+}
