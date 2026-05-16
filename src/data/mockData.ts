@@ -211,7 +211,7 @@ export const settings = [
   },
   {
     label: "Push Notifications",
-    body: "Mock-only push preference for future notification delivery.",
+    body: "Let HeatRadar send alerts when meaningful signal changes happen.",
     enabled: false,
   },
   {
@@ -222,9 +222,9 @@ export const settings = [
 ];
 
 export const accountSettings = [
-  { label: "Plan", value: "HeatRadar Pro preview" },
+  { label: "Plan", value: "Standard" },
   { label: "Artist profile", value: "Mira Vale" },
-  { label: "Data mode", value: "Mock only" },
+  { label: "Data mode", value: "Connected signals" },
 ];
 
 export const platformConnections = [
@@ -258,7 +258,7 @@ export const emptyStates = {
   },
   insights: {
     title: "No fresh signals yet",
-    body: "Once your next mock trend appears, this space becomes a focused list of what deserves action.",
+    body: "Once your next trend appears, this space becomes a focused list of what deserves action.",
   },
   notifications: {
     title: "No heat alerts yet",
@@ -274,7 +274,7 @@ export const emptyStates = {
   },
   audience: {
     title: "Audience mix is warming up",
-    body: "Segments appear once HeatRadar has enough mock listener behavior to make the read useful.",
+    body: "Segments appear once HeatRadar has enough listener movement to make the read useful.",
   },
   audienceGrowth: {
     title: "Audience growth starts with tiny signals",
@@ -310,18 +310,6 @@ export const heatScoreEducation = [
     body: "HeatRadar looks across connected platforms so one strong signal does not get buried.",
   },
 ];
-
-export const trialPlan = {
-  daysLeft: 7,
-  price: "$4.99/month",
-  headline: "Try HeatRadar Pro free for 7 days",
-  body: "Unlock deeper heat explanations, share cards, and platform-by-platform traction reads. No real payment is connected in this prototype.",
-  lockedFeatures: [
-    "Full cross-platform Heat Score breakdown",
-    "Shareable milestone cards",
-    "Weekly heat recap",
-  ],
-};
 
 export const shareCards = [
   {

@@ -7,7 +7,6 @@ export type AuthStackParamList = {
   Notifications: undefined;
   Profile: undefined;
   HeatScoreEducation: undefined;
-  TrialPaywall: undefined;
 };
 
 export type AppTabParamList = {

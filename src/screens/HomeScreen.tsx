@@ -384,7 +384,7 @@ export function HomeScreen() {
           </Card>
         </AnimatedView>
       ) : null}
-      <SectionHeader title="Share card previews" />
+      <SectionHeader title="Share Cards" />
       <View style={styles.shareGrid}>
         {shareCards.map((card) => (
           <View key={card.title} style={styles.shareItem}>

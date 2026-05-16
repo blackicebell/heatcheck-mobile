@@ -10,7 +10,6 @@ export * from "@/components/ui/BottomSheetModal";
 export * from "@/components/ui/Button";
 export * from "@/components/ui/Card";
 export * from "@/components/ui/InsightCard";
-export * from "@/components/ui/LockedFeatureCard";
 export * from "@/components/ui/MiniBarChart";
 export * from "@/components/ui/ShareMilestoneCard";
 export * from "@/components/ui/StatCard";

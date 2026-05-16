@@ -19,12 +19,12 @@ type ReleaseRadarInput = {
 
 export type ReleaseRadarItem = BaseRelease & {
   action: string;
-  confidence: "Mock read" | "Mixed read" | "Real signal";
+  confidence: "Starting read" | "Mixed read" | "Real signal";
   drivers: {
     label: string;
     value: string;
   }[];
-  platform: "Audius" | "Spotify" | "YouTube" | "Mock";
+  platform: "Audius" | "Spotify" | "YouTube" | "Catalog";
 };
 
 export function buildReleaseRadar({
@@ -56,12 +56,12 @@ export function buildReleaseRadar({
     return {
       ...release,
       action: getMockReleaseAction(release.score),
-      confidence: connectedPlatforms > 0 ? "Mixed read" : "Mock read",
+      confidence: connectedPlatforms > 0 ? "Mixed read" : "Starting read",
       drivers: [
         { label: "Release heat", value: `${release.score}/100` },
-        { label: "Signal source", value: connectedPlatforms > 0 ? "Catalog context" : "Mock data" },
+        { label: "Signal source", value: connectedPlatforms > 0 ? "Catalog context" : "Starting estimate" },
       ],
-      platform: "Mock",
+      platform: "Catalog",
     };
   });
 }

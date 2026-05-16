@@ -519,10 +519,10 @@ export function SettingsScreen() {
         </View>
       </Card>
       <Card>
-        <AppText variant="h2">Privacy-first preview</AppText>
+        <AppText variant="h2">Privacy-first access</AppText>
         <AppText muted>
-          HeatRadar uses Firebase for account access. Platform connections are
-          still previews until Audius, YouTube, and Spotify are connected.
+          HeatRadar uses Firebase for account access. Platform connections stay
+          read-only and under your control.
         </AppText>
       </Card>
       <SectionHeader title="Account" />
@@ -604,14 +604,13 @@ export function SettingsScreen() {
                     ? "Connection needs another try"
                     : connectionModal.status === "Reconnect"
                       ? "Reconnect safely"
-                      : "Ready to preview"}
+                      : "Ready to connect"}
               </AppText>
               <AppText muted>
                 {connectionModal.permission}
               </AppText>
               <AppText muted>
-                This stays mock-only. A real version would explain permissions
-                before asking for access.
+                HeatRadar explains what it needs before asking for access.
               </AppText>
             </>
           )
@@ -852,7 +851,7 @@ function AudiusConnectionContent({
       <>
         <AppText variant="h2">Audius is connected</AppText>
         <AppText muted>
-          @{connection.handle} is now feeding real public Audius context into this preview.
+          @{connection.handle} is now feeding real public Audius context into your signal read.
         </AppText>
         <AppText variant="small" muted>
           Last synced {formatSyncTime(connection.connectedAt)}
