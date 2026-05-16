@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useMemo, useState } from "react";
-import { Image, Pressable, Share, StyleSheet, View } from "react-native";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import {
   AnimatedView,
@@ -127,19 +127,6 @@ export function HomeScreen() {
     loadSpotifySignal();
     loadSyncStatuses();
     loadYouTubeSignal();
-  }
-
-  async function shareMilestone(card: (typeof shareCards)[number]) {
-    impactLight();
-
-    try {
-      await Share.share({
-        title: `${card.title} | HeatRadar`,
-        message: `${card.title}: ${card.value}\n${card.body}\n\nShared from HeatRadar.`,
-      });
-    } catch {
-      // The native share sheet can be dismissed or fail silently. No app state changes depend on it.
-    }
   }
 
   if (dashboard.isLoading) {
@@ -415,7 +402,7 @@ export function HomeScreen() {
       <View style={styles.shareGrid}>
         {shareCards.map((card) => (
           <View key={card.title} style={styles.shareItem}>
-            <ShareMilestoneCard {...card} onPress={() => shareMilestone(card)} />
+            <ShareMilestoneCard {...card} />
           </View>
         ))}
       </View>

@@ -1,15 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, View } from "react-native";
+import * as Sharing from "expo-sharing";
+import { useRef, useState } from "react";
+import { Pressable, Share, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { captureRef } from "react-native-view-shot";
 
 import { AppText } from "@/components/ui/AppText";
 import { colors, radii, spacing } from "@/theme";
+import { impactLight } from "@/utils/haptics";
 
 type ShareMilestoneCardProps = {
   accent: string;
   body: string;
   category?: string;
-  onPress?: () => void;
   title: string;
   value: string;
 };
@@ -18,41 +21,93 @@ export function ShareMilestoneCard({
   accent,
   body,
   category = "TRACTION",
-  onPress,
   title,
   value,
 }: ShareMilestoneCardProps) {
+  const cardRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
+
+  async function shareCardImage() {
+    if (sharing || !cardRef.current) {
+      return;
+    }
+
+    impactLight();
+    setSharing(true);
+
+    try {
+      const imageUri = await captureRef(cardRef.current, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(imageUri, {
+          dialogTitle: `Share ${title}`,
+          mimeType: "image/png",
+        });
+        return;
+      }
+
+      await Share.share({
+        title: `${title} | HeatRadar`,
+        message: `${title}: ${value}\n${body}\n\nShared from HeatRadar.`,
+      });
+    } catch {
+      await Share.share({
+        title: `${title} | HeatRadar`,
+        message: `${title}: ${value}\n${body}\n\nShared from HeatRadar.`,
+      });
+    } finally {
+      setSharing(false);
+    }
+  }
+
   return (
     <Pressable
       accessibilityLabel={`Share ${title}`}
       accessibilityRole="button"
-      onPress={onPress}
+      disabled={sharing}
+      onPress={shareCardImage}
       style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : undefined]}
     >
-      <LinearGradient
-        colors={[`${accent}24`, "rgba(25,28,34,0.98)"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.card, { borderColor: `${accent}55` }]}
-      >
-        <View style={styles.topRow}>
-          <View style={[styles.categoryPill, { borderColor: accent }]}>
-            <AppText variant="tiny" style={[styles.categoryText, { color: accent }]}>
-              {category}
+      <View ref={cardRef} collapsable={false} style={styles.captureSurface}>
+        <LinearGradient
+          colors={[`${accent}24`, "rgba(25,28,34,0.98)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.card, { borderColor: `${accent}55` }]}
+        >
+          <View style={styles.topRow}>
+            <View style={[styles.categoryPill, { borderColor: accent }]}>
+              <AppText variant="tiny" style={[styles.categoryText, { color: accent }]}>
+                {category}
+              </AppText>
+            </View>
+            <View style={[styles.shareButton, { borderColor: `${accent}55` }]}>
+              <Ionicons
+                name={sharing ? "hourglass" : "share-social"}
+                size={15}
+                color={colors.white}
+              />
+            </View>
+          </View>
+          <View style={styles.valueBlock}>
+            <AppText variant="title" style={{ color: accent }}>
+              {value}
+            </AppText>
+            <AppText variant="h3">{title}</AppText>
+          </View>
+          <AppText muted>{body}</AppText>
+          <View style={styles.brandRow}>
+            <View style={[styles.brandDot, { backgroundColor: accent }]} />
+            <AppText variant="tiny" style={styles.brandText}>
+              Shared from HeatRadar
             </AppText>
           </View>
-          <View style={[styles.shareButton, { borderColor: `${accent}55` }]}>
-            <Ionicons name="share-social" size={15} color={colors.white} />
-          </View>
-        </View>
-        <View style={styles.valueBlock}>
-          <AppText variant="title" style={{ color: accent }}>
-            {value}
-          </AppText>
-          <AppText variant="h3">{title}</AppText>
-        </View>
-        <AppText muted>{body}</AppText>
-      </LinearGradient>
+        </LinearGradient>
+      </View>
     </Pressable>
   );
 }
@@ -65,8 +120,13 @@ const styles = StyleSheet.create({
     opacity: 0.84,
     transform: [{ scale: 0.99 }],
   },
+  captureSurface: {
+    flex: 1,
+    backgroundColor: colors.black,
+    borderRadius: radii.lg,
+  },
   card: {
-    minHeight: 210,
+    minHeight: 236,
     borderRadius: radii.lg,
     padding: spacing.lg,
     justifyContent: "space-between",
@@ -101,5 +161,20 @@ const styles = StyleSheet.create({
   },
   valueBlock: {
     gap: spacing.xs,
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
+  },
+  brandDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  brandText: {
+    color: colors.textSubtle,
+    fontWeight: "800",
   },
 });
