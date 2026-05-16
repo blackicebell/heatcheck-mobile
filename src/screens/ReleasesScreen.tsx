@@ -1,7 +1,7 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable } from "react-native";
-import { StyleSheet, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import {
   AppText,
@@ -99,24 +99,33 @@ export function ReleasesScreen() {
               onPress={() => openRelease(release)}
               style={({ pressed }) => (pressed ? styles.pressed : undefined)}
             >
-              <Card>
+              <LinearGradient
+                colors={getReleaseGradient(release.platform)}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.releaseCard}
+              >
                 <View style={styles.row}>
-                  <View style={styles.cover}>
+                  <View style={[styles.cover, getReleaseCoverStyle(release.platform)]}>
                     <AppText variant="h3" style={styles.coverText}>
                       {release.score}
                     </AppText>
+                    <AppText variant="tiny" style={styles.coverLabel}>
+                      HEAT
+                    </AppText>
                   </View>
                   <View style={styles.copy}>
-                    <AppText variant="h2">{release.title}</AppText>
-                    <AppText muted>
-                      {release.date} / {release.status}
-                    </AppText>
                     <View style={styles.badgeRow}>
                       <SignalBadge label={release.platform} />
                       <SignalBadge label={release.confidence} quiet />
                     </View>
+                    <AppText variant="h2">{release.title}</AppText>
+                    <AppText muted>
+                      {release.date} / {release.status}
+                    </AppText>
                   </View>
                 </View>
+                <AppText muted>{release.action}</AppText>
                 <View style={styles.track}>
                   <View
                     style={[
@@ -125,7 +134,7 @@ export function ReleasesScreen() {
                     ]}
                   />
                 </View>
-              </Card>
+              </LinearGradient>
             </Pressable>
           )}
         />
@@ -180,15 +189,21 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   cover: {
-    width: 64,
-    height: 64,
-    borderRadius: radii.md,
+    width: 68,
+    height: 68,
+    borderRadius: radii.lg,
     backgroundColor: colors.blue,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
   },
   coverText: {
     color: colors.black,
+  },
+  coverLabel: {
+    color: colors.black,
+    fontWeight: "900",
   },
   copy: {
     flex: 1,
@@ -208,6 +223,14 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.82,
     transform: [{ scale: 0.99 }],
+  },
+  releaseCard: {
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: "hidden",
   },
   detailScore: {
     alignItems: "center",
@@ -251,6 +274,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSoft,
   },
 });
+
+function getReleaseGradient(platform: ReleaseRadarItem["platform"]): [string, string] {
+  if (platform === "Spotify") {
+    return ["rgba(29,185,84,0.22)", "rgba(25,28,34,0.98)"];
+  }
+
+  if (platform === "YouTube") {
+    return ["rgba(255,107,107,0.22)", "rgba(25,28,34,0.98)"];
+  }
+
+  if (platform === "Audius") {
+    return ["rgba(114,167,255,0.22)", "rgba(25,28,34,0.98)"];
+  }
+
+  return ["rgba(255,207,95,0.18)", "rgba(25,28,34,0.98)"];
+}
+
+function getReleaseCoverStyle(platform: ReleaseRadarItem["platform"]) {
+  if (platform === "Spotify") {
+    return { backgroundColor: "#1DB954" };
+  }
+
+  if (platform === "YouTube") {
+    return { backgroundColor: colors.red };
+  }
+
+  if (platform === "Audius") {
+    return { backgroundColor: colors.blue };
+  }
+
+  return { backgroundColor: colors.amber };
+}
 
 function SignalBadge({ label, quiet }: { label: string; quiet?: boolean }) {
   return (

@@ -150,7 +150,7 @@ function getHeadline(score: number, connectedSignalCount: number) {
     return "Your audience movement is starting to heat up.";
   }
 
-  return "HeatRadar is picking up your first real signals.";
+    return "Your first real signals are starting to show.";
 }
 
 function getScoreExplanation(strongestSignal: string, connectedSignalCount: number) {
@@ -171,7 +171,7 @@ function getScoreExplanation(strongestSignal: string, connectedSignalCount: numb
 
 function getScoreBoost(strongestSignal: string) {
   if (strongestSignal === "spotify") {
-    return "Your recent top track is giving HeatRadar a clearer listener-side read.";
+    return "Your recent top track is giving a clearer listener-side read.";
   }
 
   if (strongestSignal === "youtube") {
@@ -198,7 +198,7 @@ function getRecommendedAction(strongestSignal: string) {
     return "Push the Audius track getting the most public movement while the signal is fresh.";
   }
 
-  return "Connect one music platform first. HeatRadar will tell you what deserves attention once real movement appears.";
+  return "Connect one music platform first. The clearest next move will show once real movement appears.";
 }
 
 function getStrengthLabel(value: number) {

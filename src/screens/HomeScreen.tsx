@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import {
   AnimatedView,
@@ -47,6 +47,8 @@ import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight } from "@/utils/haptics";
+
+const heatRadarIcon = require("@/assets/brand/heatradar-icon.png");
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
@@ -147,6 +149,13 @@ export function HomeScreen() {
           navigation.navigate("Notifications");
         }}
       />
+      <View style={styles.brandStrip}>
+        <Image source={heatRadarIcon} style={styles.brandIcon} />
+        <View style={styles.copy}>
+          <AppText variant="h3">{"Today's heat read"}</AppText>
+          <AppText muted>Fresh signal context from your connected platforms.</AppText>
+        </View>
+      </View>
       <SectionHeader title={heatScoreRead.headline} />
       <AnimatedView>
         <Card elevated>
@@ -245,7 +254,7 @@ export function HomeScreen() {
               </>
             ) : (
               <AppText muted>
-                Audius is connected. HeatRadar will surface track movement here once public tracks come back.
+                Audius is connected. Track movement will show here once public tracks come back.
               </AppText>
             )}
           </Card>
@@ -328,7 +337,7 @@ export function HomeScreen() {
                   <SignalMetric label="Top tracks" value="Waiting" />
                 </View>
                 <AppText muted>
-                  Spotify is connected. HeatRadar will show recent top-track movement here once Spotify returns enough listening history.
+                  Spotify is connected. Recent top-track movement will show here once there is enough listening history.
                 </AppText>
               </>
             )}
@@ -377,8 +386,8 @@ export function HomeScreen() {
       >
         <AppText muted>{heatScoreRead.action}</AppText>
         <AppText>
-          HeatRadar is reading your clearest connected platform signal, then
-          turning it into one simple move that could keep the lift going.
+          This read is based on your clearest connected platform signal, then
+          turned into one simple move that could keep the lift going.
         </AppText>
       </BottomSheetModal>
     </ScreenContainer>
@@ -400,6 +409,21 @@ const styles = StyleSheet.create({
   },
   pillText: {
     color: colors.green,
+  },
+  brandStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,107,107,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,207,95,0.18)",
+  },
+  brandIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
   },
   stats: {
     flexDirection: "row",
@@ -602,7 +626,7 @@ function getOverallSyncRead(statuses: Partial<Record<PlatformId, PlatformSyncSta
   const connectedStatuses = Object.values(statuses);
 
   if (connectedStatuses.length === 0) {
-    return "Connect a platform and HeatRadar will show when it last checked for movement.";
+    return "Connect a platform and this will show when signals were last checked.";
   }
 
   if (connectedStatuses.some((status) => status.state === "failed")) {
@@ -659,22 +683,22 @@ function getAudiusSignalRead(track: AudiusTrack) {
   }
 
   if (track.play_count > 0) {
-    return "Plays are starting to give HeatRadar a first public movement signal.";
+    return "Plays are starting to give this track a first public movement signal.";
   }
 
-  return "HeatRadar is watching this track for the first signs of movement.";
+  return "This track is being watched for the first signs of movement.";
 }
 
 function getYouTubeSignalRead(connection: YouTubeConnection) {
   if (connection.viewCount > 0 && connection.subscriberCount > 0) {
-    return "Views and subscribers give HeatRadar a real video-side read on audience movement.";
+    return "Views and subscribers give a real video-side read on audience movement.";
   }
 
   if (connection.viewCount > 0) {
-    return "YouTube views are giving HeatRadar a first video traction signal.";
+    return "YouTube views are giving a first video traction signal.";
   }
 
-  return "HeatRadar is ready to watch YouTube movement as new uploads start picking up.";
+  return "YouTube movement will show here as new uploads start picking up.";
 }
 
 function getSpotifySignalRead(connection: SpotifyConnection) {
@@ -685,12 +709,12 @@ function getSpotifySignalRead(connection: SpotifyConnection) {
   }
 
   if (topTrack) {
-    return "Spotify is giving HeatRadar a clearer read on what listeners are returning to right now.";
+    return "Spotify is giving a clearer read on what listeners are returning to right now.";
   }
 
   if (connection.followers > 0) {
     return "Your Spotify profile is connected, so follower movement can start feeding the Heat Score.";
   }
 
-  return "Spotify is ready. HeatRadar will watch for listener movement as your catalog gets more activity.";
+  return "Spotify is ready. Listener movement will show here as your catalog gets more activity.";
 }

@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "scheme": "heatradar",
+    "icon": "./src/assets/brand/heatradar-icon.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -16,6 +17,7 @@
       "package": "com.blackicebell.heatradar",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
+        "foregroundImage": "./src/assets/brand/heatradar-icon.png",
         "backgroundColor": "#050608"
       }
     },
