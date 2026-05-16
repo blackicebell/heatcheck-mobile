@@ -688,6 +688,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  compactToggleBody: {
+    fontWeight: "600",
+    lineHeight: 19,
+  },
   compactSwitch: {
     width: 46,
     height: 28,
@@ -967,7 +971,7 @@ function CompactToggleRow({
     >
       <View style={styles.compactToggleCopy}>
         <AppText variant="small">{label}</AppText>
-        <AppText variant="tiny" muted>
+        <AppText variant="small" muted style={styles.compactToggleBody}>
           {body}
         </AppText>
       </View>
