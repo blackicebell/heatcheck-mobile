@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import {
   AppText,
@@ -15,7 +15,6 @@ import {
 } from "@/components";
 import {
   emptyStates,
-  settings,
 } from "@/data/mockData";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import {
@@ -30,12 +29,10 @@ import {
 } from "@/services/syncStatus";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
-import { impactLight } from "@/utils/haptics";
 
 export function ProfileScreen() {
   const artistIdentity = useArtistIdentity();
   const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
-  const [notificationSettings, setNotificationSettings] = useState(settings);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
@@ -75,15 +72,6 @@ export function ProfileScreen() {
     { label: "Sign-in email", value: artistIdentity.email },
     { label: "Sign-in method", value: artistIdentity.provider },
   ];
-
-  function toggleNotification(label: string) {
-    impactLight();
-    setNotificationSettings((currentSettings) =>
-      currentSettings.map((setting) =>
-        setting.label === label ? { ...setting, enabled: !setting.enabled } : setting,
-      ),
-    );
-  }
 
   const loadProfileSignals = useCallback(async () => {
     const [savedAudiusConnection, savedSpotifyConnection, savedSyncStatuses, savedYouTubeConnection] =
@@ -172,31 +160,6 @@ export function ProfileScreen() {
         <EmptyState icon="link" {...emptyStates.connectedAccounts} />
       )}
 
-      <SectionHeader title="Notification settings" />
-      <Card>
-        <View style={styles.notificationHeader}>
-          <View style={styles.notificationIcon}>
-            <Ionicons name="notifications" size={18} color={colors.black} />
-          </View>
-          <View style={styles.copy}>
-            <AppText variant="h3">Alert preferences</AppText>
-            <AppText muted>Choose the signal moments worth interrupting you for.</AppText>
-          </View>
-        </View>
-        <View style={styles.notificationList}>
-          {notificationSettings.map((setting, index) => (
-            <NotificationSettingRow
-              key={setting.label}
-              body={setting.body}
-              enabled={setting.enabled}
-              label={setting.label}
-              showDivider={index < notificationSettings.length - 1}
-              onPress={() => toggleNotification(setting.label)}
-            />
-          ))}
-        </View>
-      </Card>
-
       <SectionHeader title="Account" />
       <StaggeredList
         data={accountItems}
@@ -265,58 +228,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.surfaceSoft,
   },
-  notificationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  notificationIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.green,
-  },
-  notificationList: {
-    marginTop: spacing.sm,
-  },
-  notificationRow: {
-    minHeight: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  notificationRowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.08)",
-  },
-  notificationCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  switch: {
-    width: 46,
-    height: 28,
-    borderRadius: 14,
-    padding: 3,
-    backgroundColor: colors.surfaceSoft,
-  },
-  switchOn: {
-    backgroundColor: colors.green,
-  },
-  knob: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.textMuted,
-  },
-  knobOn: {
-    transform: [{ translateX: 18 }],
-    backgroundColor: colors.black,
-  },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -330,39 +241,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
 });
-
-function NotificationSettingRow({
-  body,
-  enabled,
-  label,
-  onPress,
-  showDivider,
-}: {
-  body: string;
-  enabled: boolean;
-  label: string;
-  onPress: () => void;
-  showDivider: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="switch"
-      accessibilityState={{ checked: enabled }}
-      onPress={onPress}
-      style={[styles.notificationRow, showDivider ? styles.notificationRowDivider : undefined]}
-    >
-      <View style={styles.notificationCopy}>
-        <AppText variant="small">{label}</AppText>
-        <AppText variant="tiny" muted>
-          {body}
-        </AppText>
-      </View>
-      <View style={[styles.switch, enabled ? styles.switchOn : undefined]}>
-        <View style={[styles.knob, enabled ? styles.knobOn : undefined]} />
-      </View>
-    </Pressable>
-  );
-}
 
 function SummaryMetric({ label, value }: { label: string; value: string }) {
   return (
