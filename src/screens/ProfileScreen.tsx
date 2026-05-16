@@ -1,15 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import {
   AppText,
   Card,
   EmptyState,
-  LockedFeatureCard,
   NavigationHeader,
   ScreenContainer,
   SectionHeader,
@@ -32,12 +30,12 @@ import {
 } from "@/services/syncStatus";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
-import { AuthStackParamList } from "@/types/navigation";
+import { impactLight } from "@/utils/haptics";
 
 export function ProfileScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const artistIdentity = useArtistIdentity();
   const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
+  const [notificationSettings, setNotificationSettings] = useState(settings);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
@@ -72,14 +70,20 @@ export function ProfileScreen() {
     [audiusConnection, spotifyConnection, syncStatuses, youtubeConnection],
   );
   const syncedCount = Object.values(syncStatuses).filter((status) => status?.state === "success").length;
-  const enabledNotifications = settings.filter((setting) => setting.enabled);
   const accountItems = [
-    { label: "Plan", value: "HeatRadar Pro preview" },
-    { label: "Artist profile", value: artistIdentity.name },
+    { label: "Account status", value: "Standard" },
     { label: "Sign-in email", value: artistIdentity.email },
     { label: "Sign-in method", value: artistIdentity.provider },
-    { label: "Connected signals", value: `${connectedAccounts.length}/3` },
   ];
+
+  function toggleNotification(label: string) {
+    impactLight();
+    setNotificationSettings((currentSettings) =>
+      currentSettings.map((setting) =>
+        setting.label === label ? { ...setting, enabled: !setting.enabled } : setting,
+      ),
+    );
+  }
 
   const loadProfileSignals = useCallback(async () => {
     const [savedAudiusConnection, savedSpotifyConnection, savedSyncStatuses, savedYouTubeConnection] =
@@ -169,28 +173,31 @@ export function ProfileScreen() {
       )}
 
       <SectionHeader title="Notification settings" />
-      <StaggeredList
-        data={enabledNotifications}
-        keyExtractor={(setting) => setting.label}
-        renderItem={(setting) => (
-          <Card>
-            <View style={styles.row}>
-              <Ionicons name="notifications" size={22} color={colors.blue} />
-              <View style={styles.copy}>
-                <AppText variant="h3">{setting.label}</AppText>
-                <AppText muted>{setting.body}</AppText>
-              </View>
-            </View>
-          </Card>
-        )}
-      />
+      <Card>
+        <View style={styles.notificationHeader}>
+          <View style={styles.notificationIcon}>
+            <Ionicons name="notifications" size={18} color={colors.black} />
+          </View>
+          <View style={styles.copy}>
+            <AppText variant="h3">Alert preferences</AppText>
+            <AppText muted>Choose the signal moments worth interrupting you for.</AppText>
+          </View>
+        </View>
+        <View style={styles.notificationList}>
+          {notificationSettings.map((setting, index) => (
+            <NotificationSettingRow
+              key={setting.label}
+              body={setting.body}
+              enabled={setting.enabled}
+              label={setting.label}
+              showDivider={index < notificationSettings.length - 1}
+              onPress={() => toggleNotification(setting.label)}
+            />
+          ))}
+        </View>
+      </Card>
 
       <SectionHeader title="Account" />
-      <LockedFeatureCard
-        title="HeatRadar Pro"
-        body="Unlock deeper score explanations, weekly heat recaps, and shareable milestone cards after the free trial."
-        onPress={() => navigation.navigate("TrialPaywall")}
-      />
       <StaggeredList
         data={accountItems}
         keyExtractor={(setting) => setting.label}
@@ -258,6 +265,58 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.surfaceSoft,
   },
+  notificationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  notificationIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.green,
+  },
+  notificationList: {
+    marginTop: spacing.sm,
+  },
+  notificationRow: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  notificationRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  notificationCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  switch: {
+    width: 46,
+    height: 28,
+    borderRadius: 14,
+    padding: 3,
+    backgroundColor: colors.surfaceSoft,
+  },
+  switchOn: {
+    backgroundColor: colors.green,
+  },
+  knob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.textMuted,
+  },
+  knobOn: {
+    transform: [{ translateX: 18 }],
+    backgroundColor: colors.black,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -271,6 +330,39 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
 });
+
+function NotificationSettingRow({
+  body,
+  enabled,
+  label,
+  onPress,
+  showDivider,
+}: {
+  body: string;
+  enabled: boolean;
+  label: string;
+  onPress: () => void;
+  showDivider: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked: enabled }}
+      onPress={onPress}
+      style={[styles.notificationRow, showDivider ? styles.notificationRowDivider : undefined]}
+    >
+      <View style={styles.notificationCopy}>
+        <AppText variant="small">{label}</AppText>
+        <AppText variant="tiny" muted>
+          {body}
+        </AppText>
+      </View>
+      <View style={[styles.switch, enabled ? styles.switchOn : undefined]}>
+        <View style={[styles.knob, enabled ? styles.knobOn : undefined]} />
+      </View>
+    </Pressable>
+  );
+}
 
 function SummaryMetric({ label, value }: { label: string; value: string }) {
   return (
