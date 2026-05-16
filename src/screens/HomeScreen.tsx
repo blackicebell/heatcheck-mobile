@@ -70,6 +70,7 @@ export function HomeScreen() {
       }),
     [audiusTracks, spotifyConnection, youtubeConnection],
   );
+  const heatScoreTone = getHeatScoreTone(heatScoreRead.score);
 
   const loadAudiusSignal = useCallback(async () => {
     const connection = await getAudiusConnection();
@@ -198,10 +199,23 @@ export function HomeScreen() {
               <AppText variant="tiny" muted>
                 Heat Score
               </AppText>
-              <AppText variant="title">{heatScoreRead.score}</AppText>
+              <AppText variant="title" style={{ color: heatScoreTone.color }}>
+                {heatScoreRead.score}
+              </AppText>
+              <AppText variant="small" style={[styles.scoreToneLabel, { color: heatScoreTone.color }]}>
+                {heatScoreTone.label}
+              </AppText>
             </View>
-            <View style={styles.pill}>
-              <AppText variant="small" style={styles.pillText}>
+            <View
+              style={[
+                styles.pill,
+                {
+                  backgroundColor: heatScoreTone.backgroundColor,
+                  borderColor: heatScoreTone.borderColor,
+                },
+              ]}
+            >
+              <AppText variant="small" style={[styles.pillText, { color: heatScoreTone.color }]}>
                 {heatScoreRead.weeklyChange}
               </AppText>
             </View>
@@ -433,9 +447,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 999,
     backgroundColor: "rgba(68,240,138,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(68,240,138,0.18)",
   },
   pillText: {
     color: colors.green,
+  },
+  scoreToneLabel: {
+    marginTop: -2,
+    fontWeight: "800",
   },
   heatReadCard: {
     position: "relative",
@@ -712,6 +732,42 @@ function HomeSyncRow({
       </AppText>
     </View>
   );
+}
+
+function getHeatScoreTone(score: number) {
+  if (score >= 85) {
+    return {
+      backgroundColor: "rgba(255,107,107,0.14)",
+      borderColor: "rgba(255,107,107,0.28)",
+      color: colors.red,
+      label: "Strong heat right now",
+    };
+  }
+
+  if (score >= 65) {
+    return {
+      backgroundColor: "rgba(255,207,95,0.14)",
+      borderColor: "rgba(255,207,95,0.28)",
+      color: colors.amber,
+      label: "Audience is warming up",
+    };
+  }
+
+  if (score >= 40) {
+    return {
+      backgroundColor: "rgba(68,240,138,0.14)",
+      borderColor: "rgba(68,240,138,0.24)",
+      color: colors.green,
+      label: "Movement is building",
+    };
+  }
+
+  return {
+    backgroundColor: "rgba(114,167,255,0.12)",
+    borderColor: "rgba(114,167,255,0.22)",
+    color: colors.blue,
+    label: "Still warming up",
+  };
 }
 
 function getOverallSyncRead(statuses: Partial<Record<PlatformId, PlatformSyncStatus>>) {
