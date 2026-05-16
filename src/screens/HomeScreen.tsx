@@ -34,6 +34,7 @@ import {
   getAudiusConnection,
   getAudiusTracksByHandle,
 } from "@/services/audius";
+import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight } from "@/utils/haptics";
@@ -44,6 +45,7 @@ export function HomeScreen() {
   const [audiusConnection, setAudiusConnection] = useState<AudiusConnection | null>(null);
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
+  const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useMockRefresh(900);
   const topAudiusTrack = audiusTracks[0];
 
@@ -64,10 +66,16 @@ export function HomeScreen() {
     }
   }, []);
 
+  const loadYouTubeSignal = useCallback(async () => {
+    const connection = await getYouTubeConnection();
+    setYouTubeConnection(connection);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadAudiusSignal();
-    }, [loadAudiusSignal]),
+      loadYouTubeSignal();
+    }, [loadAudiusSignal, loadYouTubeSignal]),
   );
 
   function openAlert() {
@@ -78,6 +86,7 @@ export function HomeScreen() {
   function refreshHome() {
     refresh();
     loadAudiusSignal();
+    loadYouTubeSignal();
   }
 
   if (dashboard.isLoading) {
@@ -198,6 +207,38 @@ export function HomeScreen() {
           </Card>
         </AnimatedView>
       ) : null}
+      {youtubeConnection ? (
+        <AnimatedView delay={200}>
+          <Card elevated>
+            <View style={styles.signalHeader}>
+              <View style={[styles.signalIcon, styles.youtubeIcon]}>
+                <AppText variant="h3" style={styles.youtubeIconText}>
+                  Y
+                </AppText>
+              </View>
+              <View style={styles.signalCopy}>
+                <View style={styles.signalTitleRow}>
+                  <AppText variant="h3">YouTube is connected</AppText>
+                  <View style={styles.youtubeSignalPill}>
+                    <AppText variant="tiny" style={styles.youtubeSignalText}>
+                      Video signal
+                    </AppText>
+                  </View>
+                </View>
+                <AppText muted>{youtubeConnection.title}</AppText>
+              </View>
+            </View>
+            <View style={styles.signalMetrics}>
+              <SignalMetric label="Views" value={formatCompactNumber(youtubeConnection.viewCount)} />
+              <SignalMetric label="Subscribers" value={formatCompactNumber(youtubeConnection.subscriberCount)} />
+              <SignalMetric label="Videos" value={formatCompactNumber(youtubeConnection.videoCount)} />
+            </View>
+            <AppText style={styles.signalRead}>
+              {getYouTubeSignalRead(youtubeConnection)}
+            </AppText>
+          </Card>
+        </AnimatedView>
+      ) : null}
       <SectionHeader title="Since your last alert" />
       <View style={styles.stats}>
         {retentionHighlights.map((item, index) => (
@@ -306,6 +347,12 @@ const styles = StyleSheet.create({
   signalIconText: {
     color: colors.black,
   },
+  youtubeIcon: {
+    backgroundColor: colors.red,
+  },
+  youtubeIconText: {
+    color: colors.white,
+  },
   signalCopy: {
     flex: 1,
     gap: spacing.xs,
@@ -324,6 +371,16 @@ const styles = StyleSheet.create({
   },
   realSignalText: {
     color: colors.green,
+    fontWeight: "800",
+  },
+  youtubeSignalPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,107,107,0.16)",
+  },
+  youtubeSignalText: {
+    color: colors.red,
     fontWeight: "800",
   },
   trackTitle: {
@@ -375,4 +432,16 @@ function getAudiusSignalRead(track: AudiusTrack) {
   }
 
   return "HeatRadar is watching this track for the first signs of movement.";
+}
+
+function getYouTubeSignalRead(connection: YouTubeConnection) {
+  if (connection.viewCount > 0 && connection.subscriberCount > 0) {
+    return "Views and subscribers give HeatRadar a real video-side read on audience movement.";
+  }
+
+  if (connection.viewCount > 0) {
+    return "YouTube views are giving HeatRadar a first video traction signal.";
+  }
+
+  return "HeatRadar is ready to watch YouTube movement as new uploads start picking up.";
 }
