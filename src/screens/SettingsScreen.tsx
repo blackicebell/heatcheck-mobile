@@ -48,6 +48,7 @@ import {
   YouTubeConnection,
   clearYouTubeConnection,
   connectYouTubeChannel,
+  findYouTubeChannel,
   getAvailableYouTubeChannels,
   getYouTubeConnection,
   saveYouTubeChannelConnection,
@@ -84,6 +85,8 @@ export function SettingsScreen() {
   const [youtubeChannelChoices, setYouTubeChannelChoices] = useState<YouTubeChannel[]>([]);
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const [youtubeError, setYouTubeError] = useState("");
+  const [youtubeQuery, setYouTubeQuery] = useState("");
+  const [youtubeSearching, setYouTubeSearching] = useState(false);
   const [toggleStates, setToggleStates] = useState(() =>
     Object.fromEntries(settings.map((item) => [item.label, item.enabled])),
   );
@@ -148,11 +151,6 @@ export function SettingsScreen() {
 
     if (platform.id === "youtube") {
       setConnectionModal(platform);
-
-      if (!youtubeConnection) {
-        connectYouTube({ forceAccountSelection: true });
-      }
-
       return;
     }
 
@@ -335,6 +333,26 @@ export function SettingsScreen() {
     }
   }
 
+  async function searchYouTubeChannel() {
+    if (youtubeSearching || connectingId === "youtube") {
+      return;
+    }
+
+    impactLight();
+    setYouTubeError("");
+    setYouTubeChannelChoices([]);
+    setYouTubeSearching(true);
+
+    try {
+      const channel = await findYouTubeChannel(youtubeQuery);
+      setYouTubeChannelChoices([channel]);
+    } catch (error) {
+      setYouTubeError(getYouTubeErrorMessage(error));
+    } finally {
+      setYouTubeSearching(false);
+    }
+  }
+
   function markYouTubeConnected(connection: YouTubeConnection) {
     setConnections((items) =>
       items.map((item) =>
@@ -356,6 +374,7 @@ export function SettingsScreen() {
     setYouTubeConnection(null);
     setYouTubeChannelChoices([]);
     setYouTubeError("");
+    setYouTubeQuery("");
     resetPlatformConnection("youtube");
     notifySuccess();
   }
@@ -618,11 +637,14 @@ export function SettingsScreen() {
               channelChoices={youtubeChannelChoices}
               connection={youtubeConnection}
               error={youtubeError}
-              loading={connectingId === "youtube"}
+              loading={connectingId === "youtube" || youtubeSearching}
               onChannelSelect={selectYouTubeChannel}
               onConnect={() => connectYouTube({ forceAccountSelection: true })}
               onDisconnect={disconnectYouTube}
               onRefresh={connectYouTube}
+              onSearch={searchYouTubeChannel}
+              query={youtubeQuery}
+              setQuery={setYouTubeQuery}
               syncStatus={syncStatuses.youtube}
             />
           ) : connectionModal.id === "spotify" ? (
@@ -1075,6 +1097,9 @@ type YouTubeConnectionContentProps = {
   onConnect: () => void;
   onDisconnect: () => void;
   onRefresh: () => void;
+  onSearch: () => void;
+  query: string;
+  setQuery: (query: string) => void;
   syncStatus?: PlatformSyncStatus;
 };
 
@@ -1087,6 +1112,9 @@ function YouTubeConnectionContent({
   onConnect,
   onDisconnect,
   onRefresh,
+  onSearch,
+  query,
+  setQuery,
   syncStatus,
 }: YouTubeConnectionContentProps) {
   if (connection) {
@@ -1120,7 +1148,7 @@ function YouTubeConnectionContent({
     );
   }
 
-  if (channelChoices.length > 1) {
+  if (channelChoices.length > 0) {
     return (
       <>
         <AppText variant="h2">Choose your YouTube channel</AppText>
@@ -1165,8 +1193,21 @@ function YouTubeConnectionContent({
     <>
       <AppText variant="h2">Connect YouTube</AppText>
       <AppText muted>
-        HeatRadar asks for read-only YouTube access so it can read channel and video movement. If your Google account has more than one channel, you will choose which one to connect.
+        Search by handle if Google keeps choosing the wrong default channel, or continue with Google to connect the current channel.
       </AppText>
+      <TextInput
+        autoCapitalize="none"
+        onChangeText={setQuery}
+        onSubmitEditing={onSearch}
+        placeholder="@yourchannel or channel URL"
+        placeholderTextColor={colors.textSubtle}
+        returnKeyType="search"
+        style={styles.searchInput}
+        value={query}
+      />
+      <Button loading={loading} onPress={onSearch}>
+        Find channel
+      </Button>
       <Button loading={loading} onPress={onConnect}>
         Continue with Google
       </Button>

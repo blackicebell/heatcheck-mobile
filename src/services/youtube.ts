@@ -82,6 +82,58 @@ export async function connectYouTubeChannel(options?: ConnectYouTubeOptions) {
   return saveYouTubeChannelConnection(channel);
 }
 
+export async function findYouTubeChannel(query: string) {
+  const channelLookup = parseYouTubeChannelQuery(query);
+
+  if (!channelLookup) {
+    throw new Error("youtube-channel-query-invalid");
+  }
+
+  configureGoogleSignin();
+
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+  if (!GoogleSignin.hasPreviousSignIn()) {
+    const response = await GoogleSignin.signIn();
+
+    if (response.type !== "success") {
+      throw new Error("youtube-cancelled");
+    }
+  }
+
+  const scopeResponse = await GoogleSignin.addScopes({
+    scopes: [youtubeReadonlyScope],
+  });
+
+  if (scopeResponse?.type === "cancelled") {
+    throw new Error("youtube-cancelled");
+  }
+
+  const { accessToken } = await GoogleSignin.getTokens();
+  const params = new URLSearchParams({
+    part: "snippet,statistics",
+    [channelLookup.type]: channelLookup.value,
+  });
+  const response = await fetch(`${youtubeApiBaseUrl}/channels?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("youtube-channel-fetch-failed");
+  }
+
+  const payload = (await response.json()) as YouTubeChannelResponse;
+  const channel = payload.items?.[0];
+
+  if (!channel) {
+    throw new Error("youtube-channel-not-found");
+  }
+
+  return channel;
+}
+
 export async function saveYouTubeChannelConnection(channel: YouTubeChannel) {
   const connection = toYouTubeConnection(channel);
 
@@ -131,6 +183,28 @@ async function getMyYouTubeChannels(accessToken: string) {
   }
 
   return channels;
+}
+
+function parseYouTubeChannelQuery(query: string) {
+  const trimmedQuery = query.trim();
+
+  if (!trimmedQuery) {
+    return null;
+  }
+
+  const channelIdMatch = trimmedQuery.match(/(UC[\w-]{20,})/);
+
+  if (channelIdMatch?.[1]) {
+    return { type: "id", value: channelIdMatch[1] };
+  }
+
+  const handleMatch = trimmedQuery.match(/@[\w.-]+/);
+
+  if (handleMatch?.[0]) {
+    return { type: "forHandle", value: handleMatch[0] };
+  }
+
+  return { type: "forHandle", value: trimmedQuery.startsWith("@") ? trimmedQuery : `@${trimmedQuery}` };
 }
 
 function toYouTubeConnection(channel: YouTubeChannel): YouTubeConnection {
