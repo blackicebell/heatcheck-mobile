@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 
 import { AnimatedView, AppText, Button, ScreenContainer } from "@/components";
 import { onboardingSlides } from "@/data/mockData";
@@ -13,9 +13,11 @@ import { impactLight, notifySuccess } from "@/utils/haptics";
 type Props = NativeStackScreenProps<AuthStackParamList, "Onboarding">;
 
 export function OnboardingScreen({ navigation }: Props) {
+  const { height } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const slide = onboardingSlides[index];
   const isLast = index === onboardingSlides.length - 1;
+  const compact = height < 820;
 
   function continueFlow() {
     impactLight();
@@ -30,10 +32,10 @@ export function OnboardingScreen({ navigation }: Props) {
   }
 
   return (
-    <ScreenContainer scroll={false}>
-      <View style={styles.stage}>
+    <ScreenContainer bottomPadding={spacing.lg} scroll={false}>
+      <View style={[styles.stage, compact ? styles.stageCompact : undefined]}>
         <AnimatedView delay={80}>
-          <OnboardingVisual index={index} accent={slide.accent} />
+          <OnboardingVisual compact={compact} index={index} accent={slide.accent} />
         </AnimatedView>
         <AnimatedView delay={180} style={styles.copy}>
           <AppText variant="h1">{slide.title}</AppText>
@@ -68,19 +70,28 @@ export function OnboardingScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    justifyContent: "center",
-    gap: spacing.xxl,
+    justifyContent: "flex-start",
+    gap: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  stageCompact: {
+    gap: spacing.md,
+    paddingTop: spacing.md,
   },
   visualCard: {
     width: "100%",
     aspectRatio: 1,
-    maxHeight: 330,
+    maxHeight: 292,
     borderRadius: radii.xl,
     borderWidth: 1,
     padding: spacing.lg,
     overflow: "hidden",
     backgroundColor: colors.surface,
     borderColor: "rgba(255,255,255,0.1)",
+  },
+  visualCardCompact: {
+    maxHeight: 262,
+    padding: spacing.md,
   },
   visualContent: {
     flex: 1,
@@ -117,32 +128,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   radarRingLarge: {
-    width: 206,
-    height: 206,
-    borderRadius: 103,
+    width: 178,
+    height: 178,
+    borderRadius: 89,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
   },
   radarRingMedium: {
-    width: 146,
-    height: 146,
-    borderRadius: 73,
+    width: 126,
+    height: 126,
+    borderRadius: 63,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
   },
   radarCore: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     alignItems: "center",
     justifyContent: "center",
   },
   signalDot: {
     position: "absolute",
-    right: 42,
-    top: 78,
+    right: 38,
+    top: 70,
     width: 14,
     height: 14,
     borderRadius: 7,
@@ -153,7 +164,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     gap: spacing.sm,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
   },
   signalBar: {
     flex: 1,
@@ -178,8 +189,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   liftCard: {
-    gap: spacing.sm,
-    padding: spacing.md,
+    gap: spacing.xs,
+    padding: spacing.sm,
     borderRadius: radii.lg,
     backgroundColor: "rgba(5,6,8,0.42)",
     borderWidth: 1,
@@ -197,11 +208,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(68,240,138,0.14)",
   },
   copy: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   footer: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xxl,
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
   },
   dots: {
     flexDirection: "row",
@@ -219,7 +230,15 @@ const styles = StyleSheet.create({
   },
 });
 
-function OnboardingVisual({ accent, index }: { accent: string; index: number }) {
+function OnboardingVisual({
+  accent,
+  compact,
+  index,
+}: {
+  accent: string;
+  compact: boolean;
+  index: number;
+}) {
   const gradients = getVisualGradient(index);
 
   return (
@@ -227,7 +246,11 @@ function OnboardingVisual({ accent, index }: { accent: string; index: number }) 
       colors={gradients}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={[styles.visualCard, { borderColor: `${accent}55` }]}
+      style={[
+        styles.visualCard,
+        compact ? styles.visualCardCompact : undefined,
+        { borderColor: `${accent}55` },
+      ]}
     >
       <View style={styles.visualContent}>
         <View style={styles.visualTopRow}>
@@ -264,7 +287,7 @@ function RadarVisual({ accent }: { accent: string }) {
 }
 
 function SignalBarsVisual({ accent }: { accent: string }) {
-  const heights = [76, 132, 104, 174, 148];
+  const heights = [58, 108, 86, 142, 122];
 
   return (
     <View style={styles.barStage}>
@@ -285,7 +308,7 @@ function SignalBarsVisual({ accent }: { accent: string }) {
 }
 
 function LiftVisual({ accent }: { accent: string }) {
-  const waveform = [26, 62, 38, 94, 48, 72, 32, 58, 28];
+  const waveform = [20, 50, 32, 76, 40, 58, 28, 46, 24];
 
   return (
     <View style={styles.waveformStage}>

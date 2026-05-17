@@ -12,6 +12,7 @@ import { colors, layout, spacing } from "@/theme";
 import { getResponsiveHorizontalPadding } from "@/utils/responsive";
 
 type ScreenContainerProps = {
+  bottomPadding?: number;
   children: ReactNode;
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -19,6 +20,7 @@ type ScreenContainerProps = {
 };
 
 export function ScreenContainer({
+  bottomPadding,
   children,
   onRefresh,
   refreshing = false,
@@ -49,7 +51,7 @@ export function ScreenContainer({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: getBottomContentPadding(insets.bottom) },
+            { paddingBottom: bottomPadding ?? getBottomContentPadding(insets.bottom) },
           ]}
           contentInsetAdjustmentBehavior="automatic"
           refreshControl={
@@ -67,7 +69,7 @@ export function ScreenContainer({
           {content}
         </ScrollView>
       ) : (
-        <View style={{ flex: 1, paddingBottom: getBottomContentPadding(insets.bottom) }}>
+        <View style={{ flex: 1, paddingBottom: bottomPadding ?? getBottomContentPadding(insets.bottom) }}>
           {content}
         </View>
       )}
