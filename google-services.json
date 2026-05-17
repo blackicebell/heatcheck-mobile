@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "717353489884-3t95sjikoodsl1cuhlu3oe5n1pt4v4ch.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blackicebell.heatradar",
+            "certificate_hash": "aabadcf4c25f3d76dff2455ca9cbe5ac874f1eb0"
+          }
+        },
+        {
           "client_id": "717353489884-aajuloleq50fdfsgshkt2ro4unbih760.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
