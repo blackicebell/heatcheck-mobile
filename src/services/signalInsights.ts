@@ -1,4 +1,3 @@
-import { insights } from "@/data/mockData";
 import { AudiusTrack } from "@/services/audius";
 import { SpotifyConnection } from "@/services/spotify";
 import { YouTubeConnection } from "@/services/youtube";
@@ -58,12 +57,7 @@ export function buildSignalInsights({
     });
   }
 
-  return signalInsights.length > 0
-    ? signalInsights
-    : insights.map((insight) => ({
-        ...insight,
-        source: "HeatRadar",
-      }));
+  return signalInsights;
 }
 
 function getSpotifyInsightDetail(popularity: number) {
@@ -92,7 +86,7 @@ function getAudiusInsightDetail(plays: number, engagement: number) {
 
 function getYouTubeInsightDetail(connection: YouTubeConnection) {
   if (connection.viewCount > 0 && connection.subscriberCount > 0) {
-    return "Views and subscribers together help show whether video attention is turning into audience growth. Keep the next post tied to the song that needs lift.";
+    return "Views and subscribers together help show whether video attention is turning into audience reach. Keep the next post tied to the song that needs lift.";
   }
 
   if (connection.viewCount > 0) {

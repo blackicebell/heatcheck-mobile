@@ -13,8 +13,8 @@ import {
   SectionHeader,
   StaggeredList,
 } from "@/components";
-import { emptyStates, releases } from "@/data/mockData";
-import { useMockRefresh } from "@/hooks/useMockRefresh";
+import { emptyStates } from "@/data/productContent";
+import { useRefreshFeedback } from "@/hooks/useRefreshFeedback";
 import {
   AudiusTrack,
   getAudiusConnection,
@@ -32,12 +32,11 @@ export function ReleasesScreen() {
   const [selectedRelease, setSelectedRelease] = useState<ReleaseRadarItem | null>(null);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
-  const { refresh, refreshing } = useMockRefresh();
+  const { refresh, refreshing } = useRefreshFeedback();
   const releaseRadar = useMemo(
     () =>
       buildReleaseRadar({
         audiusTracks,
-        baseReleases: releases,
         spotifyConnection,
         youtubeConnection,
       }),
@@ -84,7 +83,7 @@ export function ReleasesScreen() {
 
   return (
     <ScreenContainer onRefresh={refreshReleases} refreshing={refreshing}>
-      <NavigationHeader label="Catalog pulse" />
+      <NavigationHeader label="Release pulse" />
       <SectionHeader
         title="Release Radar"
         body="A focused read on which song is getting the clearest movement right now."
@@ -276,35 +275,25 @@ const styles = StyleSheet.create({
 });
 
 function getReleaseGradient(platform: ReleaseRadarItem["platform"]): [string, string] {
-  if (platform === "Spotify") {
-    return ["rgba(29,185,84,0.22)", "rgba(25,28,34,0.98)"];
+  switch (platform) {
+    case "Spotify":
+      return ["rgba(29,185,84,0.22)", "rgba(25,28,34,0.98)"];
+    case "YouTube":
+      return ["rgba(255,107,107,0.22)", "rgba(25,28,34,0.98)"];
+    case "Audius":
+      return ["rgba(114,167,255,0.22)", "rgba(25,28,34,0.98)"];
   }
-
-  if (platform === "YouTube") {
-    return ["rgba(255,107,107,0.22)", "rgba(25,28,34,0.98)"];
-  }
-
-  if (platform === "Audius") {
-    return ["rgba(114,167,255,0.22)", "rgba(25,28,34,0.98)"];
-  }
-
-  return ["rgba(255,207,95,0.18)", "rgba(25,28,34,0.98)"];
 }
 
 function getReleaseCoverStyle(platform: ReleaseRadarItem["platform"]) {
-  if (platform === "Spotify") {
-    return { backgroundColor: "#1DB954" };
+  switch (platform) {
+    case "Spotify":
+      return { backgroundColor: "#1DB954" };
+    case "YouTube":
+      return { backgroundColor: colors.red };
+    case "Audius":
+      return { backgroundColor: colors.blue };
   }
-
-  if (platform === "YouTube") {
-    return { backgroundColor: colors.red };
-  }
-
-  if (platform === "Audius") {
-    return { backgroundColor: colors.blue };
-  }
-
-  return { backgroundColor: colors.amber };
 }
 
 function SignalBadge({ label, quiet }: { label: string; quiet?: boolean }) {

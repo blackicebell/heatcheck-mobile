@@ -12,8 +12,8 @@ import {
   SectionHeader,
   StaggeredList,
 } from "@/components";
-import { emptyStates } from "@/data/mockData";
-import { useMockRefresh } from "@/hooks/useMockRefresh";
+import { emptyStates } from "@/data/productContent";
+import { useRefreshFeedback } from "@/hooks/useRefreshFeedback";
 import {
   AudiusTrack,
   getAudiusConnection,
@@ -30,7 +30,7 @@ export function InsightsScreen() {
   const [selectedInsight, setSelectedInsight] = useState<SignalInsight | null>(null);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
-  const { refresh, refreshing } = useMockRefresh();
+  const { refresh, refreshing } = useRefreshFeedback();
   const signalInsights = useMemo(
     () =>
       buildSignalInsights({

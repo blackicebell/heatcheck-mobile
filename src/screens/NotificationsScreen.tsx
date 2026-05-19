@@ -12,21 +12,17 @@ import {
   EmptyState,
   ScreenContainer,
   SectionHeader,
-  StatCard,
 } from "@/components";
 import {
-  notificationCooldown,
   notificationGroups,
   emptyStates,
-  releases,
-  retentionHighlights,
-} from "@/data/mockData";
+} from "@/data/productContent";
 import {
   AudiusTrack,
   getAudiusConnection,
   getAudiusTracksByHandle,
 } from "@/services/audius";
-import { buildReleaseRadar, ReleaseRadarItem } from "@/services/releaseRadar";
+import { buildReleaseRadar } from "@/services/releaseRadar";
 import { buildSignalNotifications, SignalNotification } from "@/services/signalNotifications";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
 import { getPlatformSyncStatuses } from "@/services/syncStatus";
@@ -42,7 +38,7 @@ const categoryColors: Record<string, string> = {
   "Heat Movement": colors.green,
   "Engagement Spikes": colors.blue,
   "Release Momentum": colors.pink,
-  Milestones: colors.amber,
+  "Audience Reach": colors.amber,
   Comeback: colors.mint,
 };
 
@@ -57,7 +53,6 @@ export function NotificationsScreen({ navigation }: Props) {
     }),
   );
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
-  const [releaseRadar, setReleaseRadar] = useState<ReleaseRadarItem[]>([]);
   const [selected, setSelected] = useState<HeatNotification | null>(null);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
@@ -98,7 +93,6 @@ export function NotificationsScreen({ navigation }: Props) {
 
     const nextReleaseRadar = buildReleaseRadar({
       audiusTracks: savedAudiusTracks,
-      baseReleases: releases,
       spotifyConnection: savedSpotifyConnection,
       youtubeConnection: savedYouTubeConnection,
     });
@@ -113,7 +107,6 @@ export function NotificationsScreen({ navigation }: Props) {
     setAudiusTracks(savedAudiusTracks);
     setSpotifyConnection(savedSpotifyConnection);
     setYouTubeConnection(savedYouTubeConnection);
-    setReleaseRadar(nextReleaseRadar);
     setItems(nextItems);
   }, []);
 
@@ -163,26 +156,18 @@ export function NotificationsScreen({ navigation }: Props) {
         body={getNotificationIntro(audiusTracks, spotifyConnection, youtubeConnection)}
       />
 
-      <View style={styles.highlightRow}>
-        {retentionHighlights.map((item, index) => (
-          <AnimatedView key={item.label} delay={index * 80} style={styles.highlight}>
-            <StatCard label={item.label} value={item.value} />
-          </AnimatedView>
-        ))}
-      </View>
-
-      <Card>
-        <View style={styles.cooldownHeader}>
-          <Ionicons name="timer" size={20} color={colors.green} />
-          <AppText variant="h3">Smart cooldown</AppText>
-        </View>
-        <AppText>{notificationCooldown.summary}</AppText>
-        <AppText muted>
-          {releaseRadar.length > 0
-            ? "HeatRadar is prioritizing the freshest connected signal instead of filling the feed with noise."
-            : notificationCooldown.detail}
-        </AppText>
-      </Card>
+      {items.length > 0 ? (
+        <Card>
+          <View style={styles.cooldownHeader}>
+            <Ionicons name="timer" size={20} color={colors.green} />
+            <AppText variant="h3">Signal filter</AppText>
+          </View>
+          <AppText>Only connected platform signals appear here.</AppText>
+          <AppText muted>
+            HeatRadar is prioritizing available Audius, YouTube, and Spotify data instead of filling the feed with unavailable alerts.
+          </AppText>
+        </Card>
+      ) : null}
 
       {grouped.length > 0 ? (
         grouped.map((group, groupIndex) => (
@@ -272,13 +257,6 @@ const styles = StyleSheet.create({
   },
   markRead: {
     color: colors.green,
-  },
-  highlightRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  highlight: {
-    flex: 1,
   },
   cooldownHeader: {
     flexDirection: "row",

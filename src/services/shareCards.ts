@@ -24,6 +24,10 @@ export function buildShareCards({
   spotifyConnection,
   youtubeConnection,
 }: ShareCardsInput): ShareCardSignal[] {
+  if (!spotifyConnection && !youtubeConnection && audiusTracks.length === 0) {
+    return [];
+  }
+
   const cards: ShareCardSignal[] = [
     {
       accent: "#44F08A",

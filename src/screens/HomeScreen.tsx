@@ -9,7 +9,6 @@ import {
   BottomSheetModal,
   Card,
   EmptyState,
-  LoadingSkeleton,
   MiniBarChart,
   NavigationHeader,
   ScreenContainer,
@@ -19,13 +18,10 @@ import {
   TractionAlert,
 } from "@/components";
 import {
-  dashboard,
   emptyStates,
-  loadingCopy,
-  retentionHighlights,
-} from "@/data/mockData";
+} from "@/data/productContent";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
-import { useMockRefresh } from "@/hooks/useMockRefresh";
+import { useRefreshFeedback } from "@/hooks/useRefreshFeedback";
 import {
   AudiusConnection,
   AudiusTrack,
@@ -58,7 +54,7 @@ export function HomeScreen() {
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
   const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
-  const { refresh, refreshing } = useMockRefresh(900);
+  const { refresh, refreshing } = useRefreshFeedback(900);
   const topAudiusTrack = audiusTracks[0];
   const topSpotifyTrack = spotifyConnection?.topTracks[0];
   const heatScoreRead = useMemo(
@@ -146,15 +142,6 @@ export function HomeScreen() {
     loadSpotifySignal();
     loadSyncStatuses();
     loadYouTubeSignal();
-  }
-
-  if (dashboard.isLoading) {
-    return (
-      <ScreenContainer>
-        <NavigationHeader label={loadingCopy.dashboard} actionIcon="notifications" />
-        <LoadingSkeleton />
-      </ScreenContainer>
-    );
   }
 
   return (
@@ -267,14 +254,6 @@ export function HomeScreen() {
           </View>
         </Card>
       </AnimatedView>
-      <SectionHeader title="Since your last alert" />
-      <View style={styles.stats}>
-        {retentionHighlights.map((item, index) => (
-          <AnimatedView key={item.label} delay={index * 80} style={styles.statItem}>
-            <StatCard label={item.label} value={item.value} />
-          </AnimatedView>
-        ))}
-      </View>
       <SectionHeader title="What's driving it" />
       {heatScoreRead.contributors.length > 0 ? (
         <View style={styles.stats}>
@@ -417,14 +396,18 @@ export function HomeScreen() {
           </Card>
         </AnimatedView>
       ) : null}
-      <SectionHeader title="Share Cards" />
-      <View style={styles.shareGrid}>
-        {realShareCards.map((card) => (
-          <View key={card.title} style={styles.shareItem}>
-            <ShareMilestoneCard {...card} />
+      {realShareCards.length > 0 ? (
+        <>
+          <SectionHeader title="Share Cards" />
+          <View style={styles.shareGrid}>
+            {realShareCards.map((card) => (
+              <View key={card.title} style={styles.shareItem}>
+                <ShareMilestoneCard {...card} />
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      ) : null}
       <Card>
         <View style={styles.syncHeader}>
           <View style={styles.copy}>

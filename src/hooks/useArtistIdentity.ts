@@ -1,12 +1,11 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 
-import { artist as mockArtist } from "@/data/mockData";
+import { artist as fallbackArtist } from "@/data/productContent";
 import { getLocalArtistProfile } from "@/services/artistProfile";
 import { auth } from "@/services/firebase";
 
 type ArtistIdentity = {
-  city: string;
   email: string;
   handle: string;
   initials: string;
@@ -47,10 +46,9 @@ export function useArtistIdentity() {
 }
 
 function buildArtistIdentity(name?: string | null): ArtistIdentity {
-  const artistName = name?.trim() || mockArtist.name;
+  const artistName = name?.trim() || fallbackArtist.name;
 
   return {
-    city: mockArtist.city,
     email: auth.currentUser?.email ?? "No email saved",
     handle: toHandle(artistName),
     initials: toInitials(artistName),
@@ -80,14 +78,14 @@ function toHandle(name: string) {
     .trim()
     .replace(/\s+/g, "");
 
-  return handle ? `@${handle}` : mockArtist.handle;
+  return handle ? `@${handle}` : fallbackArtist.handle;
 }
 
 function toInitials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
 
   if (words.length === 0) {
-    return mockArtist.initials;
+    return fallbackArtist.initials;
   }
 
   return words

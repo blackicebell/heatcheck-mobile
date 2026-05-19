@@ -9,7 +9,7 @@ import {
   SectionHeader,
   StaggeredList,
 } from "@/components";
-import { dashboard, heatScoreEducation } from "@/data/mockData";
+import { heatScoreEducation } from "@/data/productContent";
 import { colors } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 
@@ -32,14 +32,6 @@ export function HeatScoreEducationScreen({ navigation }: Props) {
         title="How Heat Score works"
         body="Heat Score is a simple read on whether your music is gaining listener movement across the places you connect."
       />
-      <Card elevated>
-        <AppText variant="tiny" muted>
-          Current Heat Score
-        </AppText>
-        <AppText variant="title">{dashboard.heatScore}</AppText>
-        <AppText>{dashboard.scoreExplanation}</AppText>
-        <AppText muted>{dashboard.scoreBoost}</AppText>
-      </Card>
       <StaggeredList
         data={heatScoreEducation}
         keyExtractor={(item) => item.title}

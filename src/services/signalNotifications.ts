@@ -1,4 +1,3 @@
-import { notifications } from "@/data/mockData";
 import { AudiusTrack } from "@/services/audius";
 import { ReleaseRadarItem } from "@/services/releaseRadar";
 import { SpotifyConnection } from "@/services/spotify";
@@ -9,16 +8,8 @@ type NotificationCategory =
   | "Heat Movement"
   | "Engagement Spikes"
   | "Release Momentum"
-  | "Milestones"
+  | "Audience Reach"
   | "Comeback";
-
-const allowedCategories: NotificationCategory[] = [
-  "Heat Movement",
-  "Engagement Spikes",
-  "Release Momentum",
-  "Milestones",
-  "Comeback",
-];
 
 export type SignalNotification = {
   body: string;
@@ -95,8 +86,8 @@ export function buildSignalNotifications({
   if (youtubeConnection) {
     signalNotifications.push({
       body: `${youtubeConnection.title} is helping widen the audience read beyond audio platforms.`,
-      category: "Milestones",
-      cooldown: "Milestones appear when audience reach or connected platform coverage improves.",
+      category: "Audience Reach",
+      cooldown: "Reach alerts appear only from connected public platform data.",
       id: "youtube-audience",
       reward: `${formatCompactNumber(youtubeConnection.viewCount)} views`,
       timestamp: getSignalTimestamp(syncStatuses.youtube?.checkedAt),
@@ -119,19 +110,10 @@ export function buildSignalNotifications({
   }
 
   if (signalNotifications.length === 0) {
-    return notifications.map((notification) => ({
-      ...notification,
-      category: isNotificationCategory(notification.category)
-        ? notification.category
-        : "Heat Movement",
-    }));
+    return [];
   }
 
   return signalNotifications;
-}
-
-function isNotificationCategory(category: string): category is NotificationCategory {
-  return allowedCategories.includes(category as NotificationCategory);
 }
 
 function hasFailedSync(syncStatuses: Partial<Record<string, PlatformSyncStatus>>) {

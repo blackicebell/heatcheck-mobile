@@ -61,7 +61,10 @@ export function calculateHeatScore({
 
   const platformStrength = audiusScore * 0.34 + youtubeScore * 0.33 + spotifyScore * 0.33;
   const connectionLift = connectedSignalCount * 5;
-  const score = Math.round(clamp(38 + platformStrength * 47 + connectionLift, 0, 100));
+  const score =
+    connectedSignalCount === 0
+      ? 0
+      : Math.round(clamp(38 + platformStrength * 47 + connectionLift, 0, 100));
   const weeklyChange = getWeeklyChange(score, connectedSignalCount);
   const strongestSignal = getStrongestSignal({
     audiusScore,
@@ -73,12 +76,12 @@ export function calculateHeatScore({
     action: getRecommendedAction(strongestSignal),
     contributors: [
       {
-        label: "Audience growth",
+        label: "Audience reach",
         value: getStrengthLabel(Math.max(youtubeScore, spotifyScore)),
         change: getAudienceChange(youtubeConnection, spotifyConnection),
       },
       {
-        label: "Engagement",
+        label: "Public engagement",
         value: getStrengthLabel(Math.max(audiusScore, spotifyScore)),
         change: getEngagementChange(topAudiusTrack, topSpotifyTrack?.popularity ?? 0),
       },
@@ -111,12 +114,10 @@ function clamp(value: number, min = 0, max = 1) {
 
 function getWeeklyChange(score: number, connectedSignalCount: number) {
   if (connectedSignalCount === 0) {
-    return "Warming up";
+    return "No signals";
   }
 
-  const lift = Math.max(4, Math.round(score / 8));
-
-  return `+${lift}%`;
+  return `${connectedSignalCount}/3 sources`;
 }
 
 function getStrongestSignal({
@@ -225,15 +226,15 @@ function getAudienceChange(
     (youtubeConnection?.subscriberCount ?? 0) + (spotifyConnection?.followers ?? 0);
 
   if (totalAudience >= 10000) {
-    return "+18%";
+    return formatCompactNumber(totalAudience);
   }
 
   if (totalAudience >= 1000) {
-    return "+11%";
+    return formatCompactNumber(totalAudience);
   }
 
   if (totalAudience > 0) {
-    return "+5%";
+    return formatCompactNumber(totalAudience);
   }
 
   return "No signal";
@@ -243,19 +244,15 @@ function getEngagementChange(topAudiusTrack: AudiusTrack | undefined, spotifyPop
   const publicEngagement =
     (topAudiusTrack?.favorite_count ?? 0) + (topAudiusTrack?.repost_count ?? 0);
 
-  if (publicEngagement >= 1000 || spotifyPopularity >= 60) {
-    return "+22%";
+  if (publicEngagement > 0) {
+    return formatCompactNumber(publicEngagement);
   }
 
-  if (publicEngagement >= 100 || spotifyPopularity >= 35) {
-    return "+12%";
+  if (spotifyPopularity > 0) {
+    return `${spotifyPopularity}/100`;
   }
 
-  if (publicEngagement > 0 || spotifyPopularity > 0) {
-    return "+4%";
-  }
-
-  return "No signal";
+  return "No public signal";
 }
 
 function buildSparkline(score: number) {
@@ -274,4 +271,11 @@ function buildSparkline(score: number) {
     score - 7,
     score,
   ].map((value) => Math.round(clamp(value, 0, 100)));
+}
+
+function formatCompactNumber(value: number) {
+  return Intl.NumberFormat("en", {
+    maximumFractionDigits: 1,
+    notation: "compact",
+  }).format(value);
 }

@@ -20,7 +20,7 @@ import {
 } from "@/components";
 import {
   emptyStates,
-} from "@/data/mockData";
+} from "@/data/productContent";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import { saveLocalArtistProfile } from "@/services/artistProfile";
 import { auth, db } from "@/services/firebase";
@@ -183,7 +183,7 @@ export function ProfileScreen({ navigation }: Props) {
         <View style={styles.profileCopy}>
           <AppText variant="h1">{displayName}</AppText>
           <AppText muted>
-            {displayHandle} / {artistIdentity.city}
+            {displayHandle} / {artistIdentity.provider}
           </AppText>
           <Pressable
             accessibilityRole="button"

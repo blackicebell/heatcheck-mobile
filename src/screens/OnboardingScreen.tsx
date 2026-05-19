@@ -6,7 +6,7 @@ import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AnimatedView, AppText, Button, ScreenContainer } from "@/components";
-import { onboardingSlides } from "@/data/mockData";
+import { onboardingSlides } from "@/data/productContent";
 import { colors, radii, spacing } from "@/theme";
 import { AuthStackParamList } from "@/types/navigation";
 import { impactLight, notifySuccess } from "@/utils/haptics";

@@ -15,7 +15,7 @@ import {
   SectionHeader,
   StaggeredList,
 } from "@/components";
-import { platformConnections, settings } from "@/data/mockData";
+import { platformConnections, settings } from "@/data/productContent";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import {
   AudiusConnection,
@@ -91,7 +91,7 @@ export function SettingsScreen() {
     Object.fromEntries(settings.map((item) => [item.label, item.enabled])),
   );
   const accountItems = [
-    { label: "Account status", value: "Standard" },
+    { label: "Account status", value: "Signed in" },
     { label: "Artist profile", value: artistIdentity.name },
     { label: "Sign-in email", value: artistIdentity.email },
     { label: "Sign-in method", value: artistIdentity.provider },
@@ -1255,7 +1255,7 @@ function YouTubeConnectionContent({
           <MetricPill label={`${formatCompactNumber(connection.videoCount)} videos`} />
         </View>
         <AppText muted>
-          Next we can turn uploads, views, and subscriber movement into HeatRadar signals.
+          Next we can turn public channel stats into HeatRadar signals.
         </AppText>
         <View style={styles.actionRow}>
           <Button loading={loading} onPress={onRefresh} style={styles.actionButton}>

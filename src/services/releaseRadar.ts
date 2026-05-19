@@ -12,7 +12,6 @@ type BaseRelease = {
 
 type ReleaseRadarInput = {
   audiusTracks: AudiusTrack[];
-  baseReleases: BaseRelease[];
   spotifyConnection: SpotifyConnection | null;
   youtubeConnection: YouTubeConnection | null;
 };
@@ -24,12 +23,11 @@ export type ReleaseRadarItem = BaseRelease & {
     label: string;
     value: string;
   }[];
-  platform: "Audius" | "Spotify" | "YouTube" | "Catalog";
+  platform: "Audius" | "Spotify" | "YouTube";
 };
 
 export function buildReleaseRadar({
   audiusTracks,
-  baseReleases,
   spotifyConnection,
   youtubeConnection,
 }: ReleaseRadarInput): ReleaseRadarItem[] {
@@ -40,7 +38,7 @@ export function buildReleaseRadar({
       action: "Clip the strongest hook from this track and send people back to Spotify while it is fresh.",
       confidence: "Real signal",
       date: "Spotify",
-      detail: `${track.name} is showing up as a real recent Spotify listener signal. This is based on the connected Spotify account, not a demo release.`,
+      detail: `${track.name} is showing up as a real recent Spotify listener signal from the connected Spotify account.`,
       drivers: [
         { label: "Spotify popularity", value: `${track.popularity}/100` },
         { label: "Artist", value: track.artist },
@@ -92,28 +90,7 @@ export function buildReleaseRadar({
     return realReleases.sort((first, second) => second.score - first.score);
   }
 
-  return baseReleases.map((release) => ({
-    ...release,
-    action: getMockReleaseAction(release.score),
-    confidence: "Starting read",
-    drivers: [
-      { label: "Release heat", value: `${release.score}/100` },
-      { label: "Signal source", value: "Starting estimate" },
-    ],
-    platform: "Catalog",
-  }));
-}
-
-function getMockReleaseAction(score: number) {
-  if (score >= 85) {
-    return "Keep pressure on this song with one clear fan-facing moment today.";
-  }
-
-  if (score >= 70) {
-    return "Give this release a lightweight visual or behind-the-song clip.";
-  }
-
-  return "Let this catalog track support the stronger release instead of forcing a full push.";
+  return [];
 }
 
 function normalizeLog(value: number, ceiling: number) {

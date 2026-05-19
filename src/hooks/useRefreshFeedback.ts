@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { impactLight, notifySuccess } from "@/utils/haptics";
 
-export function useMockRefresh(duration = 850) {
+export function useRefreshFeedback(duration = 850) {
   const [refreshing, setRefreshing] = useState(false);
 
   function refresh() {
