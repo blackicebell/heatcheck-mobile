@@ -47,9 +47,7 @@ import {
   YouTubeChannel,
   YouTubeConnection,
   clearYouTubeConnection,
-  connectYouTubeChannel,
   findYouTubeChannel,
-  getAvailableYouTubeChannels,
   getYouTubeConnection,
   saveYouTubeChannelConnection,
 } from "@/services/youtube";
@@ -293,8 +291,8 @@ export function SettingsScreen() {
     return null;
   }
 
-  async function connectYouTube({ forceAccountSelection = false } = {}) {
-    if (connectingId === "youtube") {
+  async function refreshYouTube() {
+    if (!youtubeConnection || connectingId === "youtube") {
       return;
     }
 
@@ -304,19 +302,8 @@ export function SettingsScreen() {
     setConnectingId("youtube");
 
     try {
-      const channels = forceAccountSelection
-        ? await getAvailableYouTubeChannels({ forceAccountSelection: true })
-        : await getAvailableYouTubeChannels();
-
-      if (channels.length > 1) {
-        setYouTubeChannelChoices(channels);
-        setConnectingId(null);
-        return;
-      }
-
-      const savedConnection = channels[0]
-        ? await saveYouTubeChannelConnection(channels[0])
-        : await connectYouTubeChannel({ forceAccountSelection });
+      const channel = await findYouTubeChannel(youtubeConnection.id);
+      const savedConnection = await saveYouTubeChannelConnection(channel);
       setYouTubeConnection(savedConnection);
       markYouTubeConnected(savedConnection);
       await updateSyncSuccess("youtube", "YouTube refreshed.");
@@ -672,9 +659,8 @@ export function SettingsScreen() {
               error={youtubeError}
               loading={connectingId === "youtube" || youtubeSearching}
               onChannelSelect={selectYouTubeChannel}
-              onConnect={() => connectYouTube({ forceAccountSelection: true })}
               onDisconnect={disconnectYouTube}
-              onRefresh={connectYouTube}
+              onRefresh={refreshYouTube}
               onSearch={searchYouTubeChannel}
               query={youtubeQuery}
               setQuery={setYouTubeQuery}
@@ -1143,7 +1129,6 @@ type YouTubeConnectionContentProps = {
   error: string;
   loading: boolean;
   onChannelSelect: (channel: YouTubeChannel) => void;
-  onConnect: () => void;
   onDisconnect: () => void;
   onRefresh: () => void;
   onSearch: () => void;
@@ -1158,7 +1143,6 @@ function YouTubeConnectionContent({
   error,
   loading,
   onChannelSelect,
-  onConnect,
   onDisconnect,
   onRefresh,
   onSearch,
@@ -1171,7 +1155,7 @@ function YouTubeConnectionContent({
       <>
         <AppText variant="h2">YouTube is connected</AppText>
         <AppText muted>
-          {connection.title} is now connected with read-only channel access.
+          {connection.title} is now connected with public channel stats.
         </AppText>
         <AppText variant="small" muted>
           Last synced {formatSyncTime(connection.connectedAt)}
@@ -1242,7 +1226,7 @@ function YouTubeConnectionContent({
     <>
       <AppText variant="h2">Connect YouTube</AppText>
       <AppText muted>
-        Search by handle if Google keeps choosing the wrong default channel, or continue with Google to connect the current channel.
+        Paste your public channel handle or URL. HeatRadar will read public channel stats without asking for private Google access.
       </AppText>
       <TextInput
         autoCapitalize="none"
@@ -1256,9 +1240,6 @@ function YouTubeConnectionContent({
       />
       <Button loading={loading} onPress={onSearch}>
         Find channel
-      </Button>
-      <Button loading={loading} onPress={onConnect}>
-        Continue with Google
       </Button>
       {error ? (
         <AppText variant="small" style={styles.failed}>
@@ -1274,11 +1255,15 @@ function getYouTubeErrorMessage(error: unknown) {
     return "YouTube connection was cancelled. You can try again anytime.";
   }
 
-  if (error instanceof Error && error.message === "youtube-channel-not-found") {
-    return "No YouTube channel was found for that Google account.";
+  if (error instanceof Error && error.message === "youtube-channel-query-invalid") {
+    return "Enter a YouTube handle, channel URL, or channel ID.";
   }
 
-  return "YouTube did not connect yet. Make sure the YouTube Data API is enabled for this Google project, then try again.";
+  if (error instanceof Error && error.message === "youtube-channel-not-found") {
+    return "No public YouTube channel was found for that handle or URL.";
+  }
+
+  return "YouTube did not connect yet. Check the channel handle or URL, then try again.";
 }
 
 type SpotifyConnectionContentProps = {

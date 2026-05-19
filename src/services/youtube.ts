@@ -6,6 +6,7 @@ import { configureGoogleSignin } from "@/services/google";
 const youtubeApiBaseUrl = "https://www.googleapis.com/youtube/v3";
 const youtubeConnectionStorageKey = "heatradar.connection.youtube";
 const youtubeReadonlyScope = "https://www.googleapis.com/auth/youtube.readonly";
+const youtubePublicApiKey = "AIzaSyBQ4IyrkL-kpeq2VF7HoJkQa7C8ukwMXiU";
 
 export type YouTubeChannel = {
   id: string;
@@ -89,36 +90,12 @@ export async function findYouTubeChannel(query: string) {
     throw new Error("youtube-channel-query-invalid");
   }
 
-  configureGoogleSignin();
-
-  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-
-  if (!GoogleSignin.hasPreviousSignIn()) {
-    const response = await GoogleSignin.signIn();
-
-    if (response.type !== "success") {
-      throw new Error("youtube-cancelled");
-    }
-  }
-
-  const scopeResponse = await GoogleSignin.addScopes({
-    scopes: [youtubeReadonlyScope],
-  });
-
-  if (scopeResponse?.type === "cancelled") {
-    throw new Error("youtube-cancelled");
-  }
-
-  const { accessToken } = await GoogleSignin.getTokens();
   const params = new URLSearchParams({
+    key: youtubePublicApiKey,
     part: "snippet,statistics",
     [channelLookup.type]: channelLookup.value,
   });
-  const response = await fetch(`${youtubeApiBaseUrl}/channels?${params.toString()}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  const response = await fetch(`${youtubeApiBaseUrl}/channels?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error("youtube-channel-fetch-failed");

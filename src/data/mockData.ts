@@ -240,7 +240,7 @@ export const platformConnections = [
     name: "YouTube",
     status: "Reconnect",
     detail: "Views, subscribers, retention",
-    permission: "HeatRadar reads video performance and retention signals. Your channel stays in your control.",
+    permission: "Paste a public YouTube channel handle or URL. HeatRadar reads public stats only.",
   },
   {
     id: "spotify",
