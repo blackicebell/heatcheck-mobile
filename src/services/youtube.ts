@@ -37,6 +37,30 @@ type YouTubeChannelResponse = {
   items?: YouTubeChannel[];
 };
 
+type YouTubeSearchResponse = {
+  items?: {
+    id?: {
+      channelId?: string;
+    };
+  }[];
+};
+
+type YouTubeApiErrorResponse = {
+  error?: {
+    code?: number;
+    errors?: {
+      reason?: string;
+    }[];
+    message?: string;
+    status?: string;
+  };
+};
+
+type YouTubeChannelLookup = {
+  type: "forHandle" | "id" | "search";
+  value: string;
+};
+
 type ConnectYouTubeOptions = {
   forceAccountSelection?: boolean;
 };
@@ -90,19 +114,7 @@ export async function findYouTubeChannel(query: string) {
     throw new Error("youtube-channel-query-invalid");
   }
 
-  const params = new URLSearchParams({
-    key: youtubePublicApiKey,
-    part: "snippet,statistics",
-    [channelLookup.type]: channelLookup.value,
-  });
-  const response = await fetch(`${youtubeApiBaseUrl}/channels?${params.toString()}`);
-
-  if (!response.ok) {
-    throw new Error("youtube-channel-fetch-failed");
-  }
-
-  const payload = (await response.json()) as YouTubeChannelResponse;
-  const channel = payload.items?.[0];
+  const channel = await getChannelByLookup(channelLookup);
 
   if (!channel) {
     throw new Error("youtube-channel-not-found");
@@ -162,11 +174,94 @@ async function getMyYouTubeChannels(accessToken: string) {
   return channels;
 }
 
-function parseYouTubeChannelQuery(query: string) {
+async function getChannelByLookup(channelLookup: YouTubeChannelLookup) {
+  if (channelLookup.type === "search") {
+    return searchYouTubeChannelByQuery(channelLookup.value);
+  }
+
+  const channel = await fetchYouTubeChannel({
+    [channelLookup.type]: channelLookup.value,
+  });
+
+  if (channel) {
+    return channel;
+  }
+
+  return searchYouTubeChannelByQuery(channelLookup.value);
+}
+
+async function searchYouTubeChannelByQuery(query: string) {
+  const payload = await fetchYouTubeJson<YouTubeSearchResponse>("search", {
+    maxResults: "1",
+    part: "snippet",
+    q: cleanYouTubeSearchQuery(query),
+    type: "channel",
+  });
+  const channelId = payload.items?.[0]?.id?.channelId;
+
+  if (!channelId) {
+    return null;
+  }
+
+  return fetchYouTubeChannel({ id: channelId });
+}
+
+async function fetchYouTubeChannel(params: Record<string, string>) {
+  const payload = await fetchYouTubeJson<YouTubeChannelResponse>("channels", {
+    part: "snippet,statistics",
+    ...params,
+  });
+
+  return payload.items?.[0] ?? null;
+}
+
+async function fetchYouTubeJson<T>(path: "channels" | "search", params: Record<string, string>) {
+  const searchParams = new URLSearchParams({
+    key: youtubePublicApiKey,
+    ...params,
+  });
+  const response = await fetch(`${youtubeApiBaseUrl}/${path}?${searchParams.toString()}`);
+  const payload = (await response.json()) as T & YouTubeApiErrorResponse;
+
+  if (!response.ok) {
+    throw new Error(getYouTubeApiError(payload));
+  }
+
+  return payload;
+}
+
+function getYouTubeApiError(payload: YouTubeApiErrorResponse) {
+  const reason = payload.error?.errors?.[0]?.reason;
+  const status = payload.error?.status;
+
+  if (reason === "quotaExceeded" || reason === "dailyLimitExceeded" || status === "RESOURCE_EXHAUSTED") {
+    return "youtube-api-quota";
+  }
+
+  if (
+    reason === "accessNotConfigured" ||
+    reason === "forbidden" ||
+    reason === "keyInvalid" ||
+    reason === "ipRefererBlocked" ||
+    status === "PERMISSION_DENIED"
+  ) {
+    return "youtube-api-key-blocked";
+  }
+
+  return "youtube-channel-fetch-failed";
+}
+
+function parseYouTubeChannelQuery(query: string): YouTubeChannelLookup | null {
   const trimmedQuery = query.trim();
 
   if (!trimmedQuery) {
     return null;
+  }
+
+  const urlLookup = parseYouTubeChannelUrl(trimmedQuery);
+
+  if (urlLookup) {
+    return urlLookup;
   }
 
   const channelIdMatch = trimmedQuery.match(/(UC[\w-]{20,})/);
@@ -181,7 +276,43 @@ function parseYouTubeChannelQuery(query: string) {
     return { type: "forHandle", value: handleMatch[0] };
   }
 
-  return { type: "forHandle", value: trimmedQuery.startsWith("@") ? trimmedQuery : `@${trimmedQuery}` };
+  return { type: "search", value: trimmedQuery };
+}
+
+function parseYouTubeChannelUrl(query: string): YouTubeChannelLookup | null {
+  if (!query.includes("youtube.com") && !query.includes("youtu.be")) {
+    return null;
+  }
+
+  try {
+    const url = new URL(query.startsWith("http") ? query : `https://${query}`);
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const channelId = pathParts.find((part) => /^UC[\w-]{20,}$/.test(part));
+
+    if (channelId) {
+      return { type: "id", value: channelId };
+    }
+
+    const handle = pathParts.find((part) => part.startsWith("@"));
+
+    if (handle) {
+      return { type: "forHandle", value: handle };
+    }
+
+    const customPath = pathParts.find((part) => !["c", "channel", "user"].includes(part.toLowerCase()));
+
+    if (customPath) {
+      return { type: "search", value: customPath.replace(/[-_]/g, " ") };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function cleanYouTubeSearchQuery(query: string) {
+  return query.replace(/^@/, "").replace(/[-_]/g, " ").trim();
 }
 
 function toYouTubeConnection(channel: YouTubeChannel): YouTubeConnection {

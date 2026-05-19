@@ -1348,10 +1348,18 @@ function getYouTubeErrorMessage(error: unknown) {
   }
 
   if (error instanceof Error && error.message === "youtube-channel-not-found") {
-    return "No public YouTube channel was found for that handle or URL.";
+    return "No public YouTube channel was found. Try the channel handle, channel URL, or exact channel name.";
   }
 
-  return "YouTube did not connect yet. Check the channel handle or URL, then try again.";
+  if (error instanceof Error && error.message === "youtube-api-key-blocked") {
+    return "YouTube lookup is blocked by the API key settings. Make sure the YouTube Data API key can be used by this app.";
+  }
+
+  if (error instanceof Error && error.message === "youtube-api-quota") {
+    return "YouTube lookup has hit its daily limit. Try again later.";
+  }
+
+  return "YouTube did not connect yet. Try a channel handle, channel URL, channel ID, or exact channel name.";
 }
 
 type SpotifyConnectionContentProps = {
