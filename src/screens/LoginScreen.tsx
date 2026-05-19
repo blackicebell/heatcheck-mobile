@@ -1,13 +1,15 @@
+import * as AppleAuthentication from "expo-apple-authentication";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  OAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithCredential,
 } from "firebase/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Image,
@@ -40,6 +42,7 @@ export function LoginScreen({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [appleSignInAvailable, setAppleSignInAvailable] = useState(false);
 
   const isCreatingAccount = mode === "create";
   const passwordIssues = getPasswordIssues(password);
@@ -48,6 +51,16 @@ export function LoginScreen({ navigation }: Props) {
     email.trim().length > 0 &&
     passwordIssues.length === 0 &&
     passwordsMatch;
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") {
+      return;
+    }
+
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleSignInAvailable)
+      .catch(() => setAppleSignInAvailable(false));
+  }, []);
 
   async function continueWithAccount() {
     if (!canContinue || loading) {
@@ -125,6 +138,43 @@ export function LoginScreen({ navigation }: Props) {
       }
 
       const credential = GoogleAuthProvider.credential(idToken);
+      const result = await withTimeout(signInWithCredential(auth, credential), "auth-timeout");
+
+      notifySuccess();
+      navigation.replace((await needsArtistSetup(result.user.uid)) ? "ArtistSetup" : "AppTabs");
+    } catch (authError) {
+      setError(getAuthMessage(authError));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function continueWithApple() {
+    if (loading) {
+      return;
+    }
+
+    impactLight();
+    setError("");
+    setResetMessage("");
+    setLoading(true);
+
+    try {
+      const appleCredential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!appleCredential.identityToken) {
+        throw new Error("missing-apple-token");
+      }
+
+      const provider = new OAuthProvider("apple.com");
+      const credential = provider.credential({
+        idToken: appleCredential.identityToken,
+      });
       const result = await withTimeout(signInWithCredential(auth, credential), "auth-timeout");
 
       notifySuccess();
@@ -267,6 +317,9 @@ export function LoginScreen({ navigation }: Props) {
             <View style={styles.divider} />
           </View>
           <GoogleButton loading={loading} onPress={continueWithGoogle} />
+          {appleSignInAvailable ? (
+            <AppleButton loading={loading} onPress={continueWithApple} />
+          ) : null}
           <Button variant="text" onPress={toggleMode}>
             {isCreatingAccount ? "I already have an account" : "Create a new account"}
           </Button>
@@ -309,6 +362,18 @@ function GoogleButton({ loading, onPress }: { loading?: boolean; onPress: () => 
         Continue with Google
       </AppText>
     </Pressable>
+  );
+}
+
+function AppleButton({ loading, onPress }: { loading?: boolean; onPress: () => void }) {
+  return (
+    <AppleAuthentication.AppleAuthenticationButton
+      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+      buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+      cornerRadius={18}
+      onPress={onPress}
+      style={[styles.appleButton, loading ? styles.googleButtonDisabled : undefined]}
+    />
   );
 }
 
@@ -405,6 +470,10 @@ const styles = StyleSheet.create({
     color: colors.black,
     fontWeight: "800",
   },
+  appleButton: {
+    height: 56,
+    width: "100%",
+  },
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
@@ -462,6 +531,14 @@ function getAuthMessage(error: unknown) {
 
   if (error instanceof Error && error.message === "missing-google-token") {
     return "Google did not return a sign-in token. Try again in a moment.";
+  }
+
+  if (error instanceof Error && error.message === "missing-apple-token") {
+    return "Apple did not return a sign-in token. Try again in a moment.";
+  }
+
+  if (typeof error === "object" && error !== null && "code" in error && String(error.code) === "ERR_REQUEST_CANCELED") {
+    return "";
   }
 
   const code =

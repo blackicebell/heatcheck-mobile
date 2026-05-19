@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { doc, getDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "@/services/firebase";
 
@@ -17,6 +17,10 @@ export async function saveLocalArtistProfile(profile: LocalArtistProfile) {
 
 export async function clearLocalArtistProfile() {
   await AsyncStorage.removeItem(artistProfileStorageKey);
+}
+
+export async function deleteRemoteArtistProfile(userId: string) {
+  await deleteDoc(doc(db, "users", userId));
 }
 
 export async function needsArtistSetup(userId: string) {

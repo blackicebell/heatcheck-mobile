@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { signOut } from "firebase/auth";
+import { deleteUser, signOut } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 
 import {
   AppText,
@@ -27,7 +27,7 @@ import {
   saveAudiusConnection,
   searchAudiusUsers,
 } from "@/services/audius";
-import { clearLocalArtistProfile } from "@/services/artistProfile";
+import { clearLocalArtistProfile, deleteRemoteArtistProfile } from "@/services/artistProfile";
 import { auth } from "@/services/firebase";
 import {
   SpotifyConnection,
@@ -75,6 +75,8 @@ export function SettingsScreen() {
   const [audiusQuery, setAudiusQuery] = useState(artistIdentity.name);
   const [audiusResults, setAudiusResults] = useState<AudiusUser[]>([]);
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState("");
   const [searchingAudius, setSearchingAudius] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
@@ -479,6 +481,68 @@ export function SettingsScreen() {
     );
   }
 
+  function confirmDeleteAccount() {
+    impactLight();
+    setDeleteAccountError("");
+
+    Alert.alert(
+      "Delete account?",
+      "This removes your HeatRadar account from this device and deletes the Firebase login account. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          onPress: deleteCurrentAccount,
+          style: "destructive",
+        },
+      ],
+    );
+  }
+
+  async function deleteCurrentAccount() {
+    if (deletingAccount) {
+      return;
+    }
+
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      setDeleteAccountError("No signed-in account was found. Sign in again, then try deleting the account.");
+      return;
+    }
+
+    setDeletingAccount(true);
+    setDeleteAccountError("");
+
+    try {
+      await Promise.allSettled([
+        clearAudiusConnection(),
+        clearSpotifyConnection(),
+        clearYouTubeConnection(),
+        clearLocalArtistProfile(),
+        clearPlatformSyncStatus("audius"),
+        clearPlatformSyncStatus("spotify"),
+        clearPlatformSyncStatus("youtube"),
+        deleteRemoteArtistProfile(currentUser.uid),
+      ]);
+
+      await deleteUser(currentUser);
+      await GoogleSignin.signOut().catch(() => undefined);
+
+      notifySuccess();
+      navigation.getParent()?.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "Login" }],
+        }),
+      );
+    } catch (error) {
+      setDeleteAccountError(getDeleteAccountMessage(error));
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
   return (
     <ScreenContainer>
       <NavigationHeader label="Signal settings" />
@@ -629,6 +693,21 @@ export function SettingsScreen() {
           <Button variant="secondary" loading={signingOut} onPress={handleSignOut}>
             Sign out
           </Button>
+          <View style={styles.deleteAccountBlock}>
+            <AppText variant="small" muted>
+              Need to leave HeatRadar? You can delete your account and local connection data here.
+            </AppText>
+            {deleteAccountError ? (
+              <AppText variant="small" style={styles.failed}>
+                {deleteAccountError}
+              </AppText>
+            ) : null}
+            <Button variant="secondary" loading={deletingAccount} onPress={confirmDeleteAccount}>
+              <AppText variant="body" style={styles.deleteAccountText}>
+                Delete account
+              </AppText>
+            </Button>
+          </View>
         </View>
       </Card>
       <BottomSheetModal
@@ -755,6 +834,15 @@ const styles = StyleSheet.create({
   },
   sessionCard: {
     gap: spacing.md,
+  },
+  deleteAccountBlock: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  deleteAccountText: {
+    color: colors.red,
+    fontWeight: "800",
+    textAlign: "center",
   },
   notificationHeader: {
     flexDirection: "row",
@@ -1351,6 +1439,23 @@ function getSpotifyErrorMessage(error: unknown) {
   }
 
   return "Spotify did not connect yet. Check that your Spotify redirect URI is heatradar://spotify-auth, then try again.";
+}
+
+function getDeleteAccountMessage(error: unknown) {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String(error.code)
+      : "";
+
+  if (code.includes("requires-recent-login")) {
+    return "For security, sign out and sign back in, then return here to delete the account.";
+  }
+
+  if (code.includes("network-request-failed")) {
+    return "The connection dropped before the account could be deleted. Try again in a moment.";
+  }
+
+  return "The account could not be deleted yet. Try again in a moment.";
 }
 
 function getConnectionStyle(status: ConnectionStatus) {

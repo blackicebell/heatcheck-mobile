@@ -14,6 +14,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.blackicebell.heatradar",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleURLTypes": [
           {
@@ -45,6 +46,7 @@
     "owner": "blackicebell",
     "plugins": [
       "expo-font",
+      "expo-apple-authentication",
       "@react-native-google-signin/google-signin",
       "expo-web-browser"
     ]
