@@ -163,7 +163,7 @@ export function NotificationsScreen({ navigation }: Props) {
           </View>
           <AppText>Only connected platform signals appear here.</AppText>
           <AppText muted>
-            HeatRadar is prioritizing available Audius, YouTube, and Spotify data instead of filling the feed with unavailable alerts.
+            These are in-app alerts for now. Real push notifications can come later once the signal rules are proven.
           </AppText>
         </Card>
       ) : null}

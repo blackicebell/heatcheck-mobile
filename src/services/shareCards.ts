@@ -7,6 +7,7 @@ export type ShareCardSignal = {
   accent: string;
   body: string;
   category: string;
+  footnote: string;
   title: string;
   value: string;
 };
@@ -33,6 +34,7 @@ export function buildShareCards({
       accent: "#44F08A",
       body: heatScoreRead.explanation,
       category: "HEAT SCORE",
+      footnote: "Built from connected platform signals",
       title: getHeatScoreShareTitle(heatScoreRead.score),
       value: String(heatScoreRead.score),
     },
@@ -45,6 +47,7 @@ export function buildShareCards({
       accent: "#72A7FF",
       body: `${topSpotifyTrack.name} is your strongest recent Spotify listener signal.`,
       category: "SPOTIFY",
+      footnote: "Spotify public profile signal",
       title: "Listener signal",
       value: `${topSpotifyTrack.popularity}/100`,
     });
@@ -55,6 +58,7 @@ export function buildShareCards({
       accent: "#FF68B3",
       body: `${youtubeConnection.title} is showing public video reach across YouTube.`,
       category: "YOUTUBE",
+      footnote: "Public YouTube channel reach",
       title: "Video reach",
       value: formatCompactNumber(youtubeConnection.viewCount),
     });
@@ -65,6 +69,7 @@ export function buildShareCards({
       accent: "#FFCF5F",
       body: `${topAudiusTrack.title} is getting public plays, favorites, and reposts on Audius.`,
       category: "AUDIUS",
+      footnote: "Public Audius track movement",
       title: "Public traction",
       value: formatCompactNumber(topAudiusTrack.play_count),
     });

@@ -34,22 +34,22 @@ export const notificationGroups = [
 export const settings = [
   {
     label: "Heat Alerts",
-    body: "Notify me when connected platform signals move.",
+    body: "Show in-app alerts when connected platform signals move.",
     enabled: true,
   },
   {
     label: "Engagement Alerts",
-    body: "Tell me when public plays, favorites, reposts, or channel reach are worth checking.",
+    body: "Highlight public plays, favorites, reposts, or channel reach worth checking.",
     enabled: true,
   },
   {
     label: "Release Alerts",
-    body: "Alert me when a connected track becomes the clearest signal.",
+    body: "Surface connected tracks with the clearest available signal.",
     enabled: true,
   },
   {
     label: "Audience Reach Alerts",
-    body: "Tell me when connected public reach signals are worth checking.",
+    body: "Call out connected public reach signals worth checking.",
     enabled: true,
   },
   {

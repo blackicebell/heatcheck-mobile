@@ -445,7 +445,10 @@ export function HomeScreen() {
       ) : null}
       {realShareCards.length > 0 ? (
         <>
-          <SectionHeader title="Share Cards" />
+          <SectionHeader
+            title="Shareable Wins"
+            body="Tap a card to share a real connected signal."
+          />
           <View style={styles.shareGrid}>
             {realShareCards.map((card) => (
               <View key={card.title} style={styles.shareItem}>

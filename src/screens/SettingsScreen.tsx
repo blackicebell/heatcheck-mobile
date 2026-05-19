@@ -640,8 +640,8 @@ export function SettingsScreen() {
             <Ionicons name="notifications" size={18} color={colors.black} />
           </View>
           <View style={styles.copy}>
-            <AppText variant="h3">Alert preferences</AppText>
-            <AppText muted>Choose the signal moments worth interrupting you for.</AppText>
+            <AppText variant="h3">In-app alert preferences</AppText>
+            <AppText muted>Choose the signal moments worth opening the app for.</AppText>
           </View>
         </View>
         <View style={styles.notificationList}>

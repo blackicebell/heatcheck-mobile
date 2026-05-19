@@ -13,6 +13,7 @@ type ShareMilestoneCardProps = {
   accent: string;
   body: string;
   category?: string;
+  footnote?: string;
   title: string;
   value: string;
 };
@@ -21,6 +22,7 @@ export function ShareMilestoneCard({
   accent,
   body,
   category = "TRACTION",
+  footnote = "Connected signal",
   title,
   value,
 }: ShareMilestoneCardProps) {
@@ -79,6 +81,7 @@ export function ShareMilestoneCard({
           end={{ x: 1, y: 1 }}
           style={[styles.card, { borderColor: `${accent}55` }]}
         >
+          <View style={[styles.glow, { backgroundColor: `${accent}30` }]} />
           <View style={styles.topRow}>
             <View style={[styles.categoryPill, { borderColor: accent }]}>
               <AppText variant="tiny" style={[styles.categoryText, { color: accent }]}>
@@ -101,9 +104,11 @@ export function ShareMilestoneCard({
           </View>
           <AppText muted>{body}</AppText>
           <View style={styles.brandRow}>
-            <View style={[styles.brandDot, { backgroundColor: accent }]} />
+            <View style={[styles.brandMark, { borderColor: `${accent}55` }]}>
+              <View style={[styles.brandDot, { backgroundColor: accent }]} />
+            </View>
             <AppText variant="tiny" style={styles.brandText}>
-              Shared from HeatRadar
+              {footnote}
             </AppText>
           </View>
         </LinearGradient>
@@ -133,6 +138,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.sm,
     overflow: "hidden",
+  },
+  glow: {
+    position: "absolute",
+    right: -36,
+    top: -36,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    opacity: 0.72,
   },
   topRow: {
     flexDirection: "row",
@@ -168,10 +182,19 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingTop: spacing.xs,
   },
+  brandMark: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    backgroundColor: "rgba(5,6,8,0.32)",
+  },
   brandDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   brandText: {
     color: colors.textSubtle,
