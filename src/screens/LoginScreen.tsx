@@ -2,6 +2,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import {
+  ActionCodeSettings,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   OAuthProvider,
@@ -32,6 +33,11 @@ import { impactLight, notifySuccess } from "@/utils/haptics";
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
 configureGoogleSignin();
+
+const passwordResetActionSettings: ActionCodeSettings = {
+  handleCodeInApp: false,
+  url: "https://heatradar-689ef.firebaseapp.com",
+};
 
 export function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
@@ -104,8 +110,11 @@ export function LoginScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      await withTimeout(sendPasswordResetEmail(auth, emailValue), "reset-timeout");
-      setResetMessage("Password reset link sent. Check your inbox.");
+      await withTimeout(
+        sendPasswordResetEmail(auth, emailValue, passwordResetActionSettings),
+        "reset-timeout",
+      );
+      setResetMessage("Password reset link sent. Open it in your browser to choose a new password.");
     } catch (authError) {
       setError(getAuthMessage(authError));
     } finally {
