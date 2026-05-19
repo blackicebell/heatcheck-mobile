@@ -104,14 +104,6 @@ export const emptyStates = {
     title: "Your traction read is warming up",
     body: "Connect Audius, YouTube, or Spotify so HeatRadar can show the signals it can actually read.",
   },
-  audience: {
-    title: "Audience mix is warming up",
-    body: "Audience reads appear after you connect a platform with public reach or available profile signals.",
-  },
-  audienceGrowth: {
-    title: "Connect a platform to see audience signals",
-    body: "HeatRadar can show YouTube reach, Spotify profile signals, and Audius public track movement once connected.",
-  },
 };
 
 export const loadingCopy = {

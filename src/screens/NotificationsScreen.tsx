@@ -94,7 +94,6 @@ export function NotificationsScreen({ navigation }: Props) {
     const nextReleaseRadar = buildReleaseRadar({
       audiusTracks: savedAudiusTracks,
       spotifyConnection: savedSpotifyConnection,
-      youtubeConnection: savedYouTubeConnection,
     });
     const nextItems = buildSignalNotifications({
       audiusTracks: savedAudiusTracks,

@@ -1,6 +1,5 @@
 import { AudiusTrack } from "@/services/audius";
 import { SpotifyConnection } from "@/services/spotify";
-import { YouTubeConnection } from "@/services/youtube";
 
 type BaseRelease = {
   date: string;
@@ -13,7 +12,6 @@ type BaseRelease = {
 type ReleaseRadarInput = {
   audiusTracks: AudiusTrack[];
   spotifyConnection: SpotifyConnection | null;
-  youtubeConnection: YouTubeConnection | null;
 };
 
 export type ReleaseRadarItem = BaseRelease & {
@@ -23,13 +21,12 @@ export type ReleaseRadarItem = BaseRelease & {
     label: string;
     value: string;
   }[];
-  platform: "Audius" | "Spotify" | "YouTube";
+  platform: "Audius" | "Spotify";
 };
 
 export function buildReleaseRadar({
   audiusTracks,
   spotifyConnection,
-  youtubeConnection,
 }: ReleaseRadarInput): ReleaseRadarItem[] {
   const realReleases: ReleaseRadarItem[] = [];
 
@@ -68,23 +65,6 @@ export function buildReleaseRadar({
       title: track.title,
     });
   });
-
-  if (youtubeConnection) {
-    realReleases.push({
-      action: "Use your next video post to point people toward the song that needs the most lift.",
-      confidence: "Mixed read",
-      date: "YouTube",
-      detail: "YouTube is connected, so HeatRadar can read channel reach even before a specific release is matched.",
-      drivers: [
-        { label: "Views", value: formatCompactNumber(youtubeConnection.viewCount) },
-        { label: "Subscribers", value: formatCompactNumber(youtubeConnection.subscriberCount) },
-      ],
-      platform: "YouTube",
-      score: clampScore(44 + normalizeLog(youtubeConnection.viewCount, 1000000) * 34 + normalizeLog(youtubeConnection.subscriberCount, 100000) * 16),
-      status: "Video-side lift",
-      title: youtubeConnection.title,
-    });
-  }
 
   if (realReleases.length > 0) {
     return realReleases.sort((first, second) => second.score - first.score);

@@ -13,6 +13,5 @@ export type AppTabParamList = {
   Home: undefined;
   Insights: undefined;
   Releases: undefined;
-  Audience: undefined;
   Settings: undefined;
 };

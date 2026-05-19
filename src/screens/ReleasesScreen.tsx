@@ -22,7 +22,6 @@ import {
 } from "@/services/audius";
 import { buildReleaseRadar, ReleaseRadarItem } from "@/services/releaseRadar";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
-import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, radii, spacing } from "@/theme";
 import { clampPercentage } from "@/utils/format";
 import { impactMedium } from "@/utils/haptics";
@@ -31,27 +30,23 @@ export function ReleasesScreen() {
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<ReleaseRadarItem | null>(null);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
-  const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useRefreshFeedback();
   const releaseRadar = useMemo(
     () =>
       buildReleaseRadar({
         audiusTracks,
         spotifyConnection,
-        youtubeConnection,
       }),
-    [audiusTracks, spotifyConnection, youtubeConnection],
+    [audiusTracks, spotifyConnection],
   );
 
   const loadReleaseSignals = useCallback(async () => {
-    const [savedAudiusConnection, savedSpotifyConnection, savedYouTubeConnection] = await Promise.all([
+    const [savedAudiusConnection, savedSpotifyConnection] = await Promise.all([
       getAudiusConnection(),
       getSpotifyConnection(),
-      getYouTubeConnection(),
     ]);
 
     setSpotifyConnection(savedSpotifyConnection);
-    setYouTubeConnection(savedYouTubeConnection);
 
     if (!savedAudiusConnection) {
       setAudiusTracks([]);
@@ -86,7 +81,7 @@ export function ReleasesScreen() {
       <NavigationHeader label="Release pulse" />
       <SectionHeader
         title="Release Radar"
-        body="A focused read on which song is getting the clearest movement right now."
+      body="Track-level reads from Audius and Spotify signals that can actually point to a song."
       />
       {releaseRadar.length > 0 ? (
         <StaggeredList
@@ -278,8 +273,6 @@ function getReleaseGradient(platform: ReleaseRadarItem["platform"]): [string, st
   switch (platform) {
     case "Spotify":
       return ["rgba(29,185,84,0.22)", "rgba(25,28,34,0.98)"];
-    case "YouTube":
-      return ["rgba(255,107,107,0.22)", "rgba(25,28,34,0.98)"];
     case "Audius":
       return ["rgba(114,167,255,0.22)", "rgba(25,28,34,0.98)"];
   }
@@ -289,8 +282,6 @@ function getReleaseCoverStyle(platform: ReleaseRadarItem["platform"]) {
   switch (platform) {
     case "Spotify":
       return { backgroundColor: "#1DB954" };
-    case "YouTube":
-      return { backgroundColor: colors.red };
     case "Audius":
       return { backgroundColor: colors.blue };
   }
