@@ -35,7 +35,7 @@ configureGoogleSignin();
 
 export function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signIn" | "create">("create");
+  const [mode, setMode] = useState<"signIn" | "create">("signIn");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");
@@ -47,10 +47,10 @@ export function LoginScreen({ navigation }: Props) {
   const isCreatingAccount = mode === "create";
   const passwordIssues = getPasswordIssues(password);
   const passwordsMatch = !isCreatingAccount || password === confirmPassword;
-  const canContinue =
-    email.trim().length > 0 &&
-    passwordIssues.length === 0 &&
-    passwordsMatch;
+  const hasEmailAndPassword = email.trim().length > 0 && password.length > 0;
+  const canContinue = isCreatingAccount
+    ? hasEmailAndPassword && passwordIssues.length === 0 && passwordsMatch
+    : hasEmailAndPassword;
 
   useEffect(() => {
     if (Platform.OS !== "ios") {
@@ -559,15 +559,15 @@ function getAuthMessage(error: unknown) {
   }
 
   if (code.includes("email-already-in-use")) {
-    return "That email already has an account. Try signing in instead.";
+    return "That email already has an account. Switch to Sign in and try again.";
   }
 
   if (code.includes("invalid-credential") || code.includes("wrong-password")) {
-    return "That email or password does not look right.";
+    return "That email or password does not match Firebase. Try the reset link, or confirm this account uses email/password and not Google or Apple.";
   }
 
   if (code.includes("user-not-found")) {
-    return "No account found for that email yet.";
+    return "No email/password account was found for that email. Check Firebase Auth or create a new review account.";
   }
 
   if (code.includes("network-request-failed")) {
