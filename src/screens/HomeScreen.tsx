@@ -23,7 +23,6 @@ import {
   emptyStates,
   loadingCopy,
   retentionHighlights,
-  shareCards,
 } from "@/data/mockData";
 import { useArtistIdentity } from "@/hooks/useArtistIdentity";
 import { useMockRefresh } from "@/hooks/useMockRefresh";
@@ -34,6 +33,7 @@ import {
   getAudiusTracksByHandle,
 } from "@/services/audius";
 import { calculateHeatScore } from "@/services/heatScore";
+import { buildShareCards } from "@/services/shareCards";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
 import {
   PlatformId,
@@ -71,6 +71,25 @@ export function HomeScreen() {
     [audiusTracks, spotifyConnection, youtubeConnection],
   );
   const heatScoreTone = getHeatScoreTone(heatScoreRead.score);
+  const heatRead = useMemo(
+    () =>
+      getTodayHeatRead({
+        audiusTracks,
+        spotifyConnection,
+        youtubeConnection,
+      }),
+    [audiusTracks, spotifyConnection, youtubeConnection],
+  );
+  const realShareCards = useMemo(
+    () =>
+      buildShareCards({
+        audiusTracks,
+        heatScoreRead,
+        spotifyConnection,
+        youtubeConnection,
+      }),
+    [audiusTracks, heatScoreRead, spotifyConnection, youtubeConnection],
+  );
 
   const loadAudiusSignal = useCallback(async () => {
     const connection = await getAudiusConnection();
@@ -170,23 +189,23 @@ export function HomeScreen() {
           </View>
         </View>
         <AppText style={styles.heatReadBody}>
-          YouTube engagement and Spotify saves are carrying most of the lift today.
+          {heatRead.body}
         </AppText>
         <View style={styles.heatReadSignals}>
           <View style={styles.heatSignalChip}>
             <AppText variant="tiny" muted>
-              YOUTUBE
+              {heatRead.primaryLabel}
             </AppText>
             <AppText variant="small" style={styles.heatSignalValue}>
-              Engagement up
+              {heatRead.primaryValue}
             </AppText>
           </View>
           <View style={styles.heatSignalChip}>
             <AppText variant="tiny" muted>
-              SPOTIFY
+              {heatRead.secondaryLabel}
             </AppText>
             <AppText variant="small" style={styles.heatSignalValue}>
-              Saves lifting
+              {heatRead.secondaryValue}
             </AppText>
           </View>
         </View>
@@ -400,7 +419,7 @@ export function HomeScreen() {
       ) : null}
       <SectionHeader title="Share Cards" />
       <View style={styles.shareGrid}>
-        {shareCards.map((card) => (
+        {realShareCards.map((card) => (
           <View key={card.title} style={styles.shareItem}>
             <ShareMilestoneCard {...card} />
           </View>
@@ -732,6 +751,77 @@ function HomeSyncRow({
       </AppText>
     </View>
   );
+}
+
+function getTodayHeatRead({
+  audiusTracks,
+  spotifyConnection,
+  youtubeConnection,
+}: {
+  audiusTracks: AudiusTrack[];
+  spotifyConnection: SpotifyConnection | null;
+  youtubeConnection: YouTubeConnection | null;
+}) {
+  const topSpotifyTrack = spotifyConnection?.topTracks[0];
+  const topAudiusTrack = audiusTracks[0];
+
+  if (topSpotifyTrack && youtubeConnection) {
+    return {
+      body: `${topSpotifyTrack.name} on Spotify and ${youtubeConnection.title} on YouTube are carrying the clearest read today.`,
+      primaryLabel: "SPOTIFY",
+      primaryValue: `${topSpotifyTrack.popularity}/100 popularity`,
+      secondaryLabel: "YOUTUBE",
+      secondaryValue: `${formatCompactNumber(youtubeConnection.viewCount)} views`,
+    };
+  }
+
+  if (topAudiusTrack && youtubeConnection) {
+    return {
+      body: `${topAudiusTrack.title} on Audius and ${youtubeConnection.title} on YouTube are giving the strongest public signals today.`,
+      primaryLabel: "AUDIUS",
+      primaryValue: `${formatCompactNumber(topAudiusTrack.play_count)} plays`,
+      secondaryLabel: "YOUTUBE",
+      secondaryValue: `${formatCompactNumber(youtubeConnection.viewCount)} views`,
+    };
+  }
+
+  if (topSpotifyTrack) {
+    return {
+      body: `${topSpotifyTrack.name} is the strongest recent Spotify listener signal in your account.`,
+      primaryLabel: "SPOTIFY",
+      primaryValue: `${topSpotifyTrack.popularity}/100 popularity`,
+      secondaryLabel: "FOLLOWERS",
+      secondaryValue: formatCompactNumber(spotifyConnection?.followers ?? 0),
+    };
+  }
+
+  if (topAudiusTrack) {
+    return {
+      body: `${topAudiusTrack.title} is showing the clearest public traction from your Audius catalog.`,
+      primaryLabel: "AUDIUS",
+      primaryValue: `${formatCompactNumber(topAudiusTrack.play_count)} plays`,
+      secondaryLabel: "ENGAGEMENT",
+      secondaryValue: formatCompactNumber(topAudiusTrack.favorite_count + topAudiusTrack.repost_count),
+    };
+  }
+
+  if (youtubeConnection) {
+    return {
+      body: `${youtubeConnection.title} is giving HeatRadar a public video-side audience read.`,
+      primaryLabel: "YOUTUBE",
+      primaryValue: `${formatCompactNumber(youtubeConnection.viewCount)} views`,
+      secondaryLabel: "SUBSCRIBERS",
+      secondaryValue: formatCompactNumber(youtubeConnection.subscriberCount),
+    };
+  }
+
+  return {
+    body: "Connect Audius, YouTube, or Spotify to turn scattered signals into a real heat read.",
+    primaryLabel: "STATUS",
+    primaryValue: "Waiting",
+    secondaryLabel: "NEXT",
+    secondaryValue: "Connect a platform",
+  };
 }
 
 function getHeatScoreTone(score: number) {

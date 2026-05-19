@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -13,31 +14,82 @@ import {
   SectionHeader,
   StaggeredList,
 } from "@/components";
-import { audienceSegments, emptyStates } from "@/data/mockData";
+import { emptyStates } from "@/data/mockData";
 import { useMockRefresh } from "@/hooks/useMockRefresh";
+import {
+  AudiusTrack,
+  getAudiusConnection,
+  getAudiusTracksByHandle,
+} from "@/services/audius";
+import { AudienceSignal, buildAudienceSignals } from "@/services/audienceSignals";
+import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
+import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
 import { colors, radii, spacing } from "@/theme";
 import { clampPercentage } from "@/utils/format";
 import { impactMedium } from "@/utils/haptics";
 
-type AudienceSegment = (typeof audienceSegments)[number];
-
 export function AudienceScreen() {
-  const [selectedSegment, setSelectedSegment] = useState<AudienceSegment | null>(null);
+  const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
+  const [selectedSegment, setSelectedSegment] = useState<AudienceSignal | null>(null);
+  const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useMockRefresh();
+  const audienceSignals = useMemo(
+    () =>
+      buildAudienceSignals({
+        audiusTracks,
+        spotifyConnection,
+        youtubeConnection,
+      }),
+    [audiusTracks, spotifyConnection, youtubeConnection],
+  );
 
-  function openSegment(segment: AudienceSegment) {
+  const loadAudienceSignals = useCallback(async () => {
+    const [savedAudiusConnection, savedSpotifyConnection, savedYouTubeConnection] = await Promise.all([
+      getAudiusConnection(),
+      getSpotifyConnection(),
+      getYouTubeConnection(),
+    ]);
+
+    setSpotifyConnection(savedSpotifyConnection);
+    setYouTubeConnection(savedYouTubeConnection);
+
+    if (!savedAudiusConnection) {
+      setAudiusTracks([]);
+      return;
+    }
+
+    try {
+      setAudiusTracks(await getAudiusTracksByHandle(savedAudiusConnection.handle));
+    } catch {
+      setAudiusTracks([]);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAudienceSignals();
+    }, [loadAudienceSignals]),
+  );
+
+  function refreshAudience() {
+    refresh();
+    loadAudienceSignals();
+  }
+
+  function openSegment(segment: AudienceSignal) {
     impactMedium();
     setSelectedSegment(segment);
   }
 
   return (
-    <ScreenContainer onRefresh={refresh} refreshing={refreshing}>
+    <ScreenContainer onRefresh={refreshAudience} refreshing={refreshing}>
       <NavigationHeader label="Listener intent" />
       <SectionHeader
         title="Audience Shape"
         body="Understand who is leaning in, not just how many people showed up."
       />
-      {audienceSegments.length > 0 ? (
+      {audienceSignals.length > 0 ? (
         <>
           <Card elevated>
             <View style={styles.intentCard}>
@@ -45,16 +97,16 @@ export function AudienceScreen() {
                 <Ionicons name="radio" size={24} color={colors.black} />
               </View>
               <View style={styles.intentCopy}>
-                <AppText variant="title">73%</AppText>
-                <AppText variant="h3">Active listener intent</AppText>
+                <AppText variant="title">{audienceSignals[0].value}%</AppText>
+                <AppText variant="h3">{audienceSignals[0].label}</AppText>
                 <AppText muted>
-                  Your most useful audience read is coming from listeners who are leaning in.
+                  Your strongest audience read is coming from {audienceSignals[0].source}.
                 </AppText>
               </View>
             </View>
           </Card>
           <StaggeredList
-            data={audienceSegments}
+            data={audienceSignals}
             keyExtractor={(segment) => segment.label}
             renderItem={(segment) => (
               <Pressable
@@ -70,11 +122,11 @@ export function AudienceScreen() {
                 >
                   <View style={styles.segmentTopRow}>
                     <View style={[styles.segmentIcon, { backgroundColor: segment.color }]}>
-                      <Ionicons name={getAudienceIcon(segment.label)} size={18} color={colors.black} />
+                      <Ionicons name={getAudienceIcon(segment.source)} size={18} color={colors.black} />
                     </View>
                     <View style={[styles.categoryPill, { borderColor: segment.color }]}>
                       <AppText variant="tiny" style={[styles.categoryText, { color: segment.color }]}>
-                        {getAudienceCategory(segment.label)}
+                        {segment.source.toUpperCase()}
                       </AppText>
                     </View>
                   </View>
@@ -82,7 +134,7 @@ export function AudienceScreen() {
                     <AppText variant="h3">{segment.label}</AppText>
                     <AppText variant="h3">{segment.value}%</AppText>
                   </View>
-                  <AppText muted>{getAudienceRead(segment.label)}</AppText>
+                  <AppText muted>{segment.body}</AppText>
                   <View style={styles.track}>
                     <View
                       style={[
@@ -114,10 +166,9 @@ export function AudienceScreen() {
           <>
             <AppText variant="title">{selectedSegment.value}%</AppText>
             <AppText muted>
-              This fake segment shows how much of your current audience behavior
-              is coming from {selectedSegment.label.toLowerCase()}. Use it to
-              decide whether to reward loyal fans or open the door wider for new
-              listeners.
+              This read is based on the connected {selectedSegment.source} signal
+              available to HeatRadar right now. It will get sharper as more
+              platform data is connected.
             </AppText>
           </>
         ) : null}
@@ -195,50 +246,14 @@ const styles = StyleSheet.create({
   },
 });
 
-function getAudienceCategory(label: string) {
-  if (label.includes("Day-one")) {
-    return "CORE FANS";
+function getAudienceIcon(source: AudienceSignal["source"]): keyof typeof Ionicons.glyphMap {
+  if (source === "YouTube") {
+    return "logo-youtube";
   }
 
-  if (label.includes("Playlist")) {
-    return "DISCOVERY";
+  if (source === "Spotify") {
+    return "radio";
   }
 
-  if (label.includes("Social")) {
-    return "SOCIAL LIFT";
-  }
-
-  return "RE-ENGAGE";
-}
-
-function getAudienceIcon(label: string): keyof typeof Ionicons.glyphMap {
-  if (label.includes("Day-one")) {
-    return "heart";
-  }
-
-  if (label.includes("Playlist")) {
-    return "sparkles";
-  }
-
-  if (label.includes("Social")) {
-    return "share-social";
-  }
-
-  return "refresh";
-}
-
-function getAudienceRead(label: string) {
-  if (label.includes("Day-one")) {
-    return "Your loyal listeners are still carrying meaningful signal.";
-  }
-
-  if (label.includes("Playlist")) {
-    return "Discovery listeners are finding their way into the catalog.";
-  }
-
-  if (label.includes("Social")) {
-    return "Short-form attention is turning into audience movement.";
-  }
-
-  return "This group may need a fresh moment to come back in.";
+  return "pulse";
 }

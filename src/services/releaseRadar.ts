@@ -33,97 +33,49 @@ export function buildReleaseRadar({
   spotifyConnection,
   youtubeConnection,
 }: ReleaseRadarInput): ReleaseRadarItem[] {
-  const topAudiusTrack = audiusTracks[0];
-  const topSpotifyTrack = spotifyConnection?.topTracks[0];
-  const connectedPlatforms = [
-    topAudiusTrack ? "Audius" : null,
-    topSpotifyTrack ? "Spotify" : null,
-    youtubeConnection ? "YouTube" : null,
-  ].filter(Boolean).length;
+  const realReleases: ReleaseRadarItem[] = [];
 
-  const realLeadRelease = getRealLeadRelease({
-    baseRelease: baseReleases[0],
-    topAudiusTrack,
-    topSpotifyTrack,
-    youtubeConnection,
-  });
-
-  return baseReleases.map((release, index) => {
-    if (index === 0 && realLeadRelease) {
-      return realLeadRelease;
-    }
-
-    return {
-      ...release,
-      action: getMockReleaseAction(release.score),
-      confidence: connectedPlatforms > 0 ? "Mixed read" : "Starting read",
-      drivers: [
-        { label: "Release heat", value: `${release.score}/100` },
-        { label: "Signal source", value: connectedPlatforms > 0 ? "Catalog context" : "Starting estimate" },
-      ],
-      platform: "Catalog",
-    };
-  });
-}
-
-function getRealLeadRelease({
-  baseRelease,
-  topAudiusTrack,
-  topSpotifyTrack,
-  youtubeConnection,
-}: {
-  baseRelease: BaseRelease | undefined;
-  topAudiusTrack?: AudiusTrack;
-  topSpotifyTrack?: SpotifyConnection["topTracks"][number];
-  youtubeConnection: YouTubeConnection | null;
-}): ReleaseRadarItem | null {
-  if (!baseRelease) {
-    return null;
-  }
-
-  if (topSpotifyTrack) {
-    return {
-      ...baseRelease,
+  spotifyConnection?.topTracks.slice(0, 3).forEach((track) => {
+    realReleases.push({
       action: "Clip the strongest hook from this track and send people back to Spotify while it is fresh.",
       confidence: "Real signal",
       date: "Spotify",
-      detail: `${topSpotifyTrack.name} is your strongest recent Spotify track. HeatRadar is treating it as the current release to watch.`,
+      detail: `${track.name} is showing up as a real recent Spotify listener signal. This is based on the connected Spotify account, not a demo release.`,
       drivers: [
-        { label: "Spotify popularity", value: `${topSpotifyTrack.popularity}/100` },
-        { label: "Top-track source", value: topSpotifyTrack.artist },
+        { label: "Spotify popularity", value: `${track.popularity}/100` },
+        { label: "Artist", value: track.artist },
       ],
       platform: "Spotify",
-      score: clampScore(52 + topSpotifyTrack.popularity * 0.42),
+      score: clampScore(52 + track.popularity * 0.42),
       status: "Listener signal",
-      title: topSpotifyTrack.name,
-    };
-  }
+      title: track.name,
+    });
+  });
 
-  if (topAudiusTrack) {
-    const engagement = topAudiusTrack.favorite_count + topAudiusTrack.repost_count;
+  audiusTracks.slice(0, 3).forEach((track) => {
+    const engagement = track.favorite_count + track.repost_count;
 
-    return {
-      ...baseRelease,
+    realReleases.push({
       action: "Give this track another push while public plays and reposts are easy to read.",
       confidence: "Real signal",
-      date: topAudiusTrack.release_date ?? "Audius",
-      detail: `${topAudiusTrack.title} is the clearest public release signal coming from Audius right now.`,
+      date: track.release_date ?? "Audius",
+      detail: `${track.title} is one of your clearest public Audius track signals right now, based on plays, favorites, and reposts.`,
       drivers: [
-        { label: "Plays", value: formatCompactNumber(topAudiusTrack.play_count) },
+        { label: "Plays", value: formatCompactNumber(track.play_count) },
         { label: "Engagement", value: formatCompactNumber(engagement) },
       ],
       platform: "Audius",
-      score: clampScore(46 + normalizeLog(topAudiusTrack.play_count, 100000) * 32 + normalizeLog(engagement, 5000) * 22),
+      score: clampScore(46 + normalizeLog(track.play_count, 100000) * 32 + normalizeLog(engagement, 5000) * 22),
       status: "Public track lift",
-      title: topAudiusTrack.title,
-    };
-  }
+      title: track.title,
+    });
+  });
 
   if (youtubeConnection) {
-    return {
-      ...baseRelease,
+    realReleases.push({
       action: "Use your next video post to point people toward the song that needs the most lift.",
       confidence: "Mixed read",
+      date: "YouTube",
       detail: "YouTube is connected, so HeatRadar can read channel reach even before a specific release is matched.",
       drivers: [
         { label: "Views", value: formatCompactNumber(youtubeConnection.viewCount) },
@@ -132,10 +84,24 @@ function getRealLeadRelease({
       platform: "YouTube",
       score: clampScore(44 + normalizeLog(youtubeConnection.viewCount, 1000000) * 34 + normalizeLog(youtubeConnection.subscriberCount, 100000) * 16),
       status: "Video-side lift",
-    };
+      title: youtubeConnection.title,
+    });
   }
 
-  return null;
+  if (realReleases.length > 0) {
+    return realReleases.sort((first, second) => second.score - first.score);
+  }
+
+  return baseReleases.map((release) => ({
+    ...release,
+    action: getMockReleaseAction(release.score),
+    confidence: "Starting read",
+    drivers: [
+      { label: "Release heat", value: `${release.score}/100` },
+      { label: "Signal source", value: "Starting estimate" },
+    ],
+    platform: "Catalog",
+  }));
 }
 
 function getMockReleaseAction(score: number) {

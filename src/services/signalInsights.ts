@@ -58,20 +58,12 @@ export function buildSignalInsights({
     });
   }
 
-  if (signalInsights.length === 0) {
-    return insights.map((insight) => ({
-      ...insight,
-      source: "HeatRadar",
-    }));
-  }
-
-  return [
-    ...signalInsights,
-    ...insights.slice(0, Math.max(0, 3 - signalInsights.length)).map((insight) => ({
-      ...insight,
-      source: "HeatRadar" as const,
-    })),
-  ];
+  return signalInsights.length > 0
+    ? signalInsights
+    : insights.map((insight) => ({
+        ...insight,
+        source: "HeatRadar",
+      }));
 }
 
 function getSpotifyInsightDetail(popularity: number) {
