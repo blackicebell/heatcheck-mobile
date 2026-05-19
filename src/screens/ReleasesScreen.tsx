@@ -22,6 +22,12 @@ import {
 } from "@/services/audius";
 import { buildReleaseRadar, ReleaseRadarItem } from "@/services/releaseRadar";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
+import {
+  WatchedTrack,
+  getTrackWatchlist,
+  isTrackWatched,
+  toggleWatchedTrack,
+} from "@/services/trackWatchlist";
 import { colors, radii, spacing } from "@/theme";
 import { clampPercentage } from "@/utils/format";
 import { impactMedium } from "@/utils/haptics";
@@ -30,6 +36,7 @@ export function ReleasesScreen() {
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<ReleaseRadarItem | null>(null);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [watchlist, setWatchlist] = useState<WatchedTrack[]>([]);
   const { refresh, refreshing } = useRefreshFeedback();
   const releaseRadar = useMemo(
     () =>
@@ -41,12 +48,14 @@ export function ReleasesScreen() {
   );
 
   const loadReleaseSignals = useCallback(async () => {
-    const [savedAudiusConnection, savedSpotifyConnection] = await Promise.all([
+    const [savedAudiusConnection, savedSpotifyConnection, savedWatchlist] = await Promise.all([
       getAudiusConnection(),
       getSpotifyConnection(),
+      getTrackWatchlist(),
     ]);
 
     setSpotifyConnection(savedSpotifyConnection);
+    setWatchlist(savedWatchlist);
 
     if (!savedAudiusConnection) {
       setAudiusTracks([]);
@@ -76,6 +85,17 @@ export function ReleasesScreen() {
     setSelectedRelease(release);
   }
 
+  async function toggleWatch(release: ReleaseRadarItem) {
+    impactMedium();
+    setWatchlist(
+      await toggleWatchedTrack({
+        id: release.id,
+        source: release.platform,
+        title: release.title,
+      }),
+    );
+  }
+
   return (
     <ScreenContainer onRefresh={refreshReleases} refreshing={refreshing}>
       <NavigationHeader label="Release pulse" />
@@ -86,7 +106,7 @@ export function ReleasesScreen() {
       {releaseRadar.length > 0 ? (
         <StaggeredList
           data={releaseRadar}
-          keyExtractor={(release) => release.title}
+          keyExtractor={(release) => release.id}
           renderItem={(release) => (
             <Pressable
               accessibilityRole="button"
@@ -112,6 +132,9 @@ export function ReleasesScreen() {
                     <View style={styles.badgeRow}>
                       <SignalBadge label={release.platform} />
                       <SignalBadge label={release.confidence} quiet />
+                      {isTrackWatched(watchlist, release.id) ? (
+                        <SignalBadge label="Watching" quiet />
+                      ) : null}
                     </View>
                     <AppText variant="h2">{release.title}</AppText>
                     <AppText muted>
@@ -120,6 +143,15 @@ export function ReleasesScreen() {
                   </View>
                 </View>
                 <AppText muted>{release.action}</AppText>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => toggleWatch(release)}
+                  style={styles.watchButton}
+                >
+                  <AppText variant="small" style={styles.watchButtonText}>
+                    {isTrackWatched(watchlist, release.id) ? "Remove from watchlist" : "Watch this track"}
+                  </AppText>
+                </Pressable>
                 <View style={styles.track}>
                   <View
                     style={[
@@ -161,6 +193,17 @@ export function ReleasesScreen() {
               <AppText variant="h3">Best next move</AppText>
               <AppText muted>{selectedRelease.action}</AppText>
             </Card>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => toggleWatch(selectedRelease)}
+              style={styles.watchButton}
+            >
+              <AppText variant="small" style={styles.watchButtonText}>
+                {isTrackWatched(watchlist, selectedRelease.id)
+                  ? "Remove from watchlist"
+                  : "Watch this track"}
+              </AppText>
+            </Pressable>
             <View style={styles.track}>
               <View
                 style={[
@@ -266,6 +309,19 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radii.md,
     backgroundColor: colors.surfaceSoft,
+  },
+  watchButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    backgroundColor: "rgba(68,240,138,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(68,240,138,0.22)",
+  },
+  watchButtonText: {
+    color: colors.green,
+    fontWeight: "800",
   },
 });
 

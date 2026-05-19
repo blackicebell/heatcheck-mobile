@@ -20,6 +20,12 @@ import {
   getAudiusTracksByHandle,
 } from "@/services/audius";
 import { AudienceSignal, buildAudienceSignals } from "@/services/audienceSignals";
+import {
+  SignalHistoryRead,
+  buildSignalHistoryReads,
+  buildWeeklySummary,
+  getSignalHistory,
+} from "@/services/signalHistory";
 import { buildSignalInsights, SignalInsight } from "@/services/signalInsights";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
 import { YouTubeConnection, getYouTubeConnection } from "@/services/youtube";
@@ -29,7 +35,9 @@ import { impactMedium } from "@/utils/haptics";
 export function InsightsScreen() {
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [selectedInsight, setSelectedInsight] = useState<SignalInsight | null>(null);
+  const [signalHistoryReads, setSignalHistoryReads] = useState<SignalHistoryRead[]>([]);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [weeklySummary, setWeeklySummary] = useState("");
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useRefreshFeedback();
   const signalInsights = useMemo(
@@ -60,6 +68,10 @@ export function InsightsScreen() {
 
     setSpotifyConnection(savedSpotifyConnection);
     setYouTubeConnection(savedYouTubeConnection);
+
+    const history = await getSignalHistory();
+    setSignalHistoryReads(buildSignalHistoryReads(history));
+    setWeeklySummary(buildWeeklySummary(history));
 
     if (!savedAudiusConnection) {
       setAudiusTracks([]);
@@ -96,8 +108,21 @@ export function InsightsScreen() {
         title="Signal Reads"
         body="Plain-language reads from the platforms already feeding your Heat Score."
       />
-      {signalInsights.length > 0 || audienceSignals.length > 0 ? (
+      {signalInsights.length > 0 || audienceSignals.length > 0 || signalHistoryReads.length > 0 ? (
         <>
+          {signalHistoryReads.length > 0 ? (
+            <>
+              <SectionHeader
+                title="Weekly Recap"
+                body={weeklySummary}
+              />
+              <StaggeredList
+                data={signalHistoryReads}
+                keyExtractor={(item) => item.headline}
+                renderItem={(item) => <HistoryReadCard read={item} />}
+              />
+            </>
+          ) : null}
           {signalInsights.length > 0 ? (
             <StaggeredList
               data={signalInsights}
@@ -174,6 +199,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: "rgba(25,28,34,0.92)",
   },
+  historyCard: {
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    backgroundColor: "rgba(17,19,24,0.96)",
+  },
   audienceTopRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -219,4 +251,40 @@ function AudienceSignalCard({ signal }: { signal: AudienceSignal }) {
       </View>
     </View>
   );
+}
+
+function HistoryReadCard({ read }: { read: SignalHistoryRead }) {
+  const accentColor = getHistoryToneColor(read.tone);
+
+  return (
+    <View style={[styles.historyCard, { borderColor: `${accentColor}44` }]}>
+      <View style={styles.audienceTopRow}>
+        <View style={[styles.sourceDot, { backgroundColor: accentColor }]} />
+        <AppText variant="tiny" style={[styles.sourceLabel, { color: accentColor }]}>
+          {read.label}
+        </AppText>
+      </View>
+      <View style={styles.audienceScoreRow}>
+        <View style={styles.audienceCopy}>
+          <AppText variant="h3">{read.headline}</AppText>
+          <AppText muted>{read.body}</AppText>
+        </View>
+        <AppText variant="h2" style={{ color: accentColor }}>
+          {read.value}
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
+function getHistoryToneColor(tone: SignalHistoryRead["tone"]) {
+  if (tone === "blue") {
+    return colors.blue;
+  }
+
+  if (tone === "pink") {
+    return colors.pink;
+  }
+
+  return colors.green;
 }

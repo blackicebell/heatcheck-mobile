@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import {
@@ -30,6 +30,11 @@ import {
 } from "@/services/audius";
 import { calculateHeatScore } from "@/services/heatScore";
 import { buildShareCards } from "@/services/shareCards";
+import {
+  SignalHistoryRead,
+  buildSignalHistoryReads,
+  saveSignalSnapshot,
+} from "@/services/signalHistory";
 import { SpotifyConnection, getSpotifyConnection } from "@/services/spotify";
 import {
   PlatformId,
@@ -52,6 +57,7 @@ export function HomeScreen() {
   const [audiusTracks, setAudiusTracks] = useState<AudiusTrack[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [spotifyConnection, setSpotifyConnection] = useState<SpotifyConnection | null>(null);
+  const [signalHistoryReads, setSignalHistoryReads] = useState<SignalHistoryRead[]>([]);
   const [syncStatuses, setSyncStatuses] = useState<Partial<Record<PlatformId, PlatformSyncStatus>>>({});
   const [youtubeConnection, setYouTubeConnection] = useState<YouTubeConnection | null>(null);
   const { refresh, refreshing } = useRefreshFeedback(900);
@@ -130,6 +136,29 @@ export function HomeScreen() {
       loadYouTubeSignal();
     }, [loadAudiusSignal, loadSpotifySignal, loadSyncStatuses, loadYouTubeSignal]),
   );
+
+  useEffect(() => {
+    let active = true;
+
+    async function saveCurrentRead() {
+      const history = await saveSignalSnapshot({
+        audiusTracks,
+        heatScoreRead,
+        spotifyConnection,
+        youtubeConnection,
+      });
+
+      if (active) {
+        setSignalHistoryReads(buildSignalHistoryReads(history));
+      }
+    }
+
+    saveCurrentRead();
+
+    return () => {
+      active = false;
+    };
+  }, [audiusTracks, heatScoreRead, spotifyConnection, youtubeConnection]);
 
   function openAlert() {
     impactLight();
@@ -254,6 +283,24 @@ export function HomeScreen() {
           </View>
         </Card>
       </AnimatedView>
+      {signalHistoryReads.length > 0 ? (
+        <AnimatedView delay={120}>
+          <Card elevated>
+            <View style={styles.historyHeader}>
+              <View style={styles.copy}>
+                <AppText variant="tiny" muted>
+                  Saved signal read
+                </AppText>
+                <AppText variant="h3">{signalHistoryReads[0].headline}</AppText>
+              </View>
+              <AppText variant="h2" style={styles.historyValue}>
+                {signalHistoryReads[0].value}
+              </AppText>
+            </View>
+            <AppText muted>{signalHistoryReads[0].body}</AppText>
+          </Card>
+        </AnimatedView>
+      ) : null}
       <SectionHeader title="What's driving it" />
       {heatScoreRead.contributors.length > 0 ? (
         <View style={styles.stats}>
@@ -660,6 +707,15 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: spacing.md,
+  },
+  historyHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  historyValue: {
+    color: colors.green,
   },
   syncList: {
     gap: spacing.sm,

@@ -4,6 +4,7 @@ import { SpotifyConnection } from "@/services/spotify";
 type BaseRelease = {
   date: string;
   detail: string;
+  id: string;
   score: number;
   status: string;
   title: string;
@@ -40,6 +41,7 @@ export function buildReleaseRadar({
         { label: "Spotify popularity", value: `${track.popularity}/100` },
         { label: "Artist", value: track.artist },
       ],
+      id: `spotify:${track.id}`,
       platform: "Spotify",
       score: clampScore(52 + track.popularity * 0.42),
       status: "Listener signal",
@@ -59,6 +61,7 @@ export function buildReleaseRadar({
         { label: "Plays", value: formatCompactNumber(track.play_count) },
         { label: "Engagement", value: formatCompactNumber(engagement) },
       ],
+      id: `audius:${track.id}`,
       platform: "Audius",
       score: clampScore(46 + normalizeLog(track.play_count, 100000) * 32 + normalizeLog(engagement, 5000) * 22),
       status: "Public track lift",
