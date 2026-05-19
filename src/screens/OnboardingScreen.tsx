@@ -2,7 +2,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AnimatedView, AppText, Button, ScreenContainer } from "@/components";
 import { onboardingSlides } from "@/data/mockData";
@@ -14,10 +15,12 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Onboarding">;
 
 export function OnboardingScreen({ navigation }: Props) {
   const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
   const slide = onboardingSlides[index];
   const isLast = index === onboardingSlides.length - 1;
   const compact = height < 820;
+  const bottomOffset = getOnboardingBottomOffset(insets.bottom);
 
   function continueFlow() {
     impactLight();
@@ -32,7 +35,7 @@ export function OnboardingScreen({ navigation }: Props) {
   }
 
   return (
-    <ScreenContainer bottomPadding={spacing.lg} scroll={false}>
+    <ScreenContainer bottomPadding={bottomOffset} scroll={false}>
       <View style={[styles.stage, compact ? styles.stageCompact : undefined]}>
         <AnimatedView delay={80}>
           <OnboardingVisual compact={compact} index={index} accent={slide.accent} />
@@ -375,4 +378,10 @@ function getVisualIcon(index: number): keyof typeof Ionicons.glyphMap {
   }
 
   return "pulse";
+}
+
+function getOnboardingBottomOffset(bottomInset: number) {
+  const androidGestureClearance = Platform.OS === "android" ? 86 : 64;
+
+  return Math.max(androidGestureClearance, bottomInset + spacing.xxl);
 }
